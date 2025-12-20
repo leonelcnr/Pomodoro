@@ -1,11 +1,20 @@
 import './App.css'
-
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Login from './pages/Login'
+import Registro from './pages/Registro'
+import Home from './pages/Home'
+import Dashboard from './pages/Dashboard'
 function App() {
 
   return (
-    <>
-      <h1 className='font-bold text-3xl'>Pomodoreano</h1>
-    </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/registro" element={<Registro />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
