@@ -5,20 +5,21 @@ import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
 import { AuthContextProvider } from './services/AuthContexto'
 import Login from './pages/Login'
+
 function App() {
 
-  return (
-    <AuthContextProvider> {/* meneja que el usuario este logueado */}
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/registro" element={<Registro />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthContextProvider>
-  )
+	return (
+		<BrowserRouter>
+			<AuthContextProvider> {/* meneja que el usuario este logueado */}
+				<Routes>
+					<Route path="/login" element={<Login />} />
+					<Route path="/registro" element={<Registro />} />
+					<Route path="/" element={<Home />} />
+					<Route path="/dashboard" element={<Dashboard />} />
+				</Routes>
+			</AuthContextProvider>
+		</BrowserRouter>
+	)
 }
 
 export default App
