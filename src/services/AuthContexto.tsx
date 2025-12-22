@@ -5,7 +5,6 @@ import { replace, useNavigate } from "react-router-dom";
 
 const AuthContext = createContext({
     user: null,
-    setUser: (user: any) => { },
     iniciarSesionConGoogle: () => { },
     cerrarSesion: () => { }
 });
@@ -29,8 +28,8 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
     const cerrarSesion = async () => {
         try {
             const { error } = await supabase.auth.signOut()
-            if (error) throw error
             setUser(null) // no se si hace falta esto
+            if (error) throw error
         } catch (error) {
             console.log(error)
         }
@@ -44,15 +43,20 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
                 navigate("/login", { replace: true });
             }
             else {
+                setUser(session?.user.user_metadata);
+                console.log("user", session.user)
                 navigate("/", { replace: true })
             }
         });
+        return () => {
+            authListener.subscription;
+        };
     }, []);
 
 
 
     return (
-        <AuthContext.Provider value={{ user, setUser, iniciarSesionConGoogle, cerrarSesion }}>
+        <AuthContext.Provider value={{ user, iniciarSesionConGoogle, cerrarSesion }}>
             {children}
         </AuthContext.Provider>
     );
