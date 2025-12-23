@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import Dashboard from "./pages/Dashboard";
+import { TimerDisplay } from "./features/timer/components/TimerDisplay";
 
 export const router = createBrowserRouter([
     {
@@ -15,19 +16,17 @@ export const router = createBrowserRouter([
         children: [
             {
                 element: <HomeLayout />,
-                children: [{ path: "/", element: <Home /> }],
+                children: [
+                    { path: "/", element: <Home /> },
+                    { path: "/dashboard", element: <Dashboard /> },
+                    { path: "/timer", element: <TimerDisplay /> },
+                ],
             },
             {
                 element: <AuthLayout />,
-                children: [{ path: "/login", element: <Login /> }],
-            },
-            {
-                element: <AuthLayout />, //Aca va el layout de registro
-                children: [{ path: "/registro", element: <Registro /> }],
-            },
-            {
-                element: <HomeLayout />,
-                children: [{ path: "/dashboard", element: <Dashboard /> }],
+                children: [{ path: "/login", element: <Login /> },
+                { path: "/registro", element: <Registro /> },
+                ],
             },
         ],
     },
