@@ -45,13 +45,13 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
             else {
                 setUser(session?.user.user_metadata);
                 console.log("user", session.user)
-                navigate("/", { replace: true })
-            }
+                // navigate("/", { replace: true }) //Esto nos esta haciendo quilombo, proba alt tabear, te
+            }                                       // redirije siempre al home pq chequea todo el tiempo que esta logeado.
         });
         return () => {
-            authListener.subscription;
+            authListener.subscription.unsubscribe();
         };
-    }, []);
+    }, [navigate]);
 
 
 
