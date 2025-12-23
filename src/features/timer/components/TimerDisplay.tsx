@@ -10,7 +10,7 @@ const formatTime = (seconds: number) => {
 };
 
 export const TimerDisplay = () => {
-    const { timeLeft, isActive, toggleTimer, handleReset, setPomodoro, setShortBreak, setLongBreak } = useTimer();
+    const { timeLeft, isActive,mode, toggleTimer, handleReset, setPomodoro, setShortBreak, setLongBreak } = useTimer();
 
     // Cambiamos el título de la pestaña del navegador para ver el tiempo ahí también
     //   document.title = `${formatTime(timeLeft)} - Pomodoro App`;
@@ -24,13 +24,13 @@ export const TimerDisplay = () => {
                 <div className="flex gap-4 justify-center mt-6">
 
                     <button
-                        className="px-8 py-3 rounded-full font-bold text-xl bg-red-500 hover:bg-red-600 transition-all"
+                        className={`px-8 py-3 rounded-full font-bold text-xl transition-all ${mode === 'pomodoro' ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-600 hover:bg-gray-500'}`}
                         onClick={setPomodoro}>Pomodoro</button>
                     <button
-                        className="px-8 py-3 rounded-full font-bold text-xl bg-gray-600 hover:bg-gray-500 transition-all"
+                        className={`px-8 py-3 rounded-full font-bold text-xl transition-all ${mode === 'shortBreak' ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-600 hover:bg-gray-500'}`}
                         onClick={setShortBreak}>Short Break</button>
                     <button
-                        className="px-8 py-3 rounded-full font-bold text-xl bg-gray-600 hover:bg-gray-500 transition-all"
+                        className={`px-8 py-3 rounded-full font-bold text-xl transition-all ${mode === 'longBreak' ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-600 hover:bg-gray-500'}`}
                         onClick={setLongBreak}>Long Break</button>
                 </div>
             </nav>

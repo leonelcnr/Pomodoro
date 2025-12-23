@@ -6,7 +6,7 @@ interface TimerState {
   initialTime: number;   // Para poder resetear (ej: 25 * 60)
   isActive: boolean;     // ¿Está corriendo el reloj?
   mode: 'pomodoro' | 'shortBreak' | 'longBreak'; // El modo actual
-  
+
   // Acciones (funciones que modifican el estado)
   setTimeLeft: (time: number) => void;
   setIsActive: (active: boolean) => void;

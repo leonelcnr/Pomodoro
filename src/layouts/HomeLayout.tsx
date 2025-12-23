@@ -1,7 +1,6 @@
 // src/layouts/AppLayout.tsx
 import { Outlet } from "react-router-dom";
 import Header from "../components/Header";
-
 const HomeLayout = () => {
     return (
         <div className="min-h-screen w-screen bg-zinc-700 text-zinc-100">
