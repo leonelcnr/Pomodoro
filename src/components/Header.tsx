@@ -9,7 +9,9 @@ import {
     AvatarFallback,
     AvatarImage,
 } from '@/components/ui/avatar';
-import { div } from 'framer-motion/client';
+// import { div } from 'framer-motion/client';
+import { ThemeTogglerButton } from './ui/theme-toggler';
+
 
 const AVATARS = [
     {
@@ -46,7 +48,7 @@ const AVATARS = [
 
 const Header = () => {
     return (
-        <div className="h-dvh w-dvw flex items-center justify-center">
+        <div className="h-32 w-dvw flex items-center justify-center">
             <AvatarGroup>
                 {AVATARS.map((avatar, index) => (
                     <Avatar key={index} className="size-12 border-3 border-background">
