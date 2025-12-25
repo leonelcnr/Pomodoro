@@ -9,9 +9,9 @@ const HomeLayout = () => {
             <main className="mx-auto w-full max-w-5xl px-4 py-6">
                 <Outlet />
             </main>
-              <div className="absolute top-4 right-4">
-            <ThemeTogglerButton />
-        </div>
+            <div className="absolute top-4 right-4">
+                <ThemeTogglerButton />
+            </div>
         </div>
     );
 }
