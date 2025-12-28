@@ -1,4 +1,3 @@
-// src/layouts/AppLayout.tsx
 import { Outlet } from "react-router-dom";
 import Header from "../components/Header";
 import { ThemeTogglerButton } from "@/components/ui/theme-toggler";
