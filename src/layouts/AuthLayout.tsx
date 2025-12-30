@@ -8,9 +8,9 @@ const AuthLayout = () => {
             <div className="w-full h-full flex justify-center items-center">
                 <Outlet />
             </div>
-              <div className="absolute top-4 right-4">
-            <ThemeTogglerButton />
-        </div>
+            <div className="absolute top-4 right-4">
+                <ThemeTogglerButton />
+            </div>
         </div>
     );
 }

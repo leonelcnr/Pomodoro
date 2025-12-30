@@ -7,10 +7,10 @@ export default function App({ children }: { children: React.ReactNode }) {
 		<ThemeProvider
 			attribute="class"
 			defaultTheme="light"
-			enableSystem
-			disableTransitionOnChange={true}
+			enableSystem={false}
+			disableTransitionOnChange={false}
 		>
-			<div className='h-dvh w-dvw'>{children}</div>
+			<div className='h-dvh w-dvw overflow-x-hidden'>{children}</div>
 		</ThemeProvider>
 	);
 }

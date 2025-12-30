@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTheme } from 'next-themes';
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import type { VariantProps } from 'class-variance-authority';
 
 import {
@@ -14,19 +14,8 @@ import {
 import { buttonVariants } from '@/components/animate-ui/components/buttons/icon';
 import { cn } from '@/lib/utils';
 
-const getIcon = (
-    effective: ThemeSelection,
-    resolved: Resolved,
-    modes: ThemeSelection[],
-) => {
-    const theme = modes.includes('system') ? effective : resolved;
-    return theme === 'system' ? (
-        <Monitor />
-    ) : theme === 'dark' ? (
-        <Moon />
-    ) : (
-        <Sun />
-    );
+const getIcon = (resolved: Resolved) => {
+    return resolved === 'dark' ? <Moon /> : <Sun />;
 };
 
 const getNextTheme = (
@@ -48,13 +37,13 @@ type ThemeTogglerButtonProps = React.ComponentProps<'button'> &
 function ThemeTogglerButton({
     variant = 'default',
     size = 'default',
-    modes = ['dark', 'light', 'system'],
+    modes = ['dark', 'light'],
     direction = 'ltr',
     onImmediateChange,
     onClick,
     className,
-    ...props
-}: ThemeTogglerButtonProps) {
+    ...props }: ThemeTogglerButtonProps) {
+
     const { theme, resolvedTheme, setTheme } = useTheme();
 
     return (
@@ -63,8 +52,7 @@ function ThemeTogglerButton({
             resolvedTheme={resolvedTheme as Resolved}
             setTheme={setTheme}
             direction={direction}
-            onImmediateChange={onImmediateChange}
-        >
+            onImmediateChange={onImmediateChange}>
             {({ effective, resolved, toggleTheme }) => (
                 <button
                     data-slot="theme-toggler-button"
@@ -75,7 +63,7 @@ function ThemeTogglerButton({
                     }}
                     {...props}
                 >
-                    {getIcon(effective, resolved, modes)}
+                    {getIcon(resolved)}
                 </button>
             )}
         </ThemeTogglerPrimitive>

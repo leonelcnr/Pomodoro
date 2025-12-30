@@ -9,7 +9,7 @@ const Login = () => {
 					<div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
 						<Clock className="size-4" />
 					</div>
-					Pomodoreano
+					Pomodoreando
 				</a>
 				<LoginForm />
 			</div>

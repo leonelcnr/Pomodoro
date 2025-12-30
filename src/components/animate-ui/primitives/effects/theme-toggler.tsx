@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { flushSync } from 'react-dom';
 
-type ThemeSelection = 'light' | 'dark' | 'system';
+type ThemeSelection = 'light' | 'dark';
 type Resolved = 'light' | 'dark';
 type Direction = 'btt' | 'ttb' | 'ltr' | 'rtl';
 
@@ -14,13 +14,6 @@ type ChildrenRender =
     effective: ThemeSelection;
     toggleTheme: (theme: ThemeSelection) => void;
   }) => React.ReactNode);
-
-function getSystemEffective(): Resolved {
-  if (typeof window === 'undefined') return 'dark';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light';
-}
 
 function getClipKeyframes(direction: Direction): [string, string] {
   switch (direction) {
@@ -67,6 +60,14 @@ function ThemeToggler({
     resolved: resolvedTheme,
   });
 
+  // Sincronizar current con las props cuando cambian
+  React.useEffect(() => {
+    setCurrent({
+      effective: theme,
+      resolved: resolvedTheme,
+    });
+  }, [theme, resolvedTheme]);
+
   React.useEffect(() => {
     if (
       preview &&
@@ -80,35 +81,36 @@ function ThemeToggler({
   const [fromClip, toClip] = getClipKeyframes(direction);
 
   const toggleTheme = React.useCallback(
-    async (theme: ThemeSelection) => {
-      const resolved = theme === 'system' ? getSystemEffective() : theme;
+    async (newTheme: ThemeSelection) => {
+      // Como ya no usamos 'system', el tema resuelto es el mismo que el tema seleccionado
+      const newResolved = newTheme as Resolved;
 
-      setCurrent({ effective: theme, resolved });
-      onImmediateChange?.(theme);
+      // Llamar al callback inmediato
+      onImmediateChange?.(newTheme);
 
-      if (theme === 'system' && resolved === resolvedTheme) {
-        setTheme(theme);
+      // Si el tema no cambia, no hacer nada
+      if (newResolved === resolvedTheme) {
         return;
       }
 
+      // Si el navegador no soporta View Transitions, cambiar sin animación
       if (!document.startViewTransition) {
-        flushSync(() => {
-          setPreview({ effective: theme, resolved });
-        });
-        setTheme(theme);
+        setTheme(newTheme);
         return;
       }
 
+      // Preparar la transición
       await document.startViewTransition(() => {
         flushSync(() => {
-          setPreview({ effective: theme, resolved });
+          setPreview({ effective: newTheme, resolved: newResolved });
           document.documentElement.classList.toggle(
             'dark',
-            resolved === 'dark',
+            newResolved === 'dark',
           );
         });
       }).ready;
 
+      // Animar la transición
       document.documentElement
         .animate(
           { clipPath: [fromClip, toClip] },
@@ -119,18 +121,21 @@ function ThemeToggler({
           },
         )
         .finished.finally(() => {
-          setTheme(theme);
+          setTheme(newTheme);
         });
     },
     [onImmediateChange, resolvedTheme, fromClip, toClip, setTheme],
   );
 
+  // Usar preview si está disponible, de lo contrario usar current
+  const displayState = preview || current;
+
   return (
     <React.Fragment {...props}>
       {typeof children === 'function'
         ? children({
-          effective: current.effective,
-          resolved: current.resolved,
+          effective: displayState.effective,
+          resolved: displayState.resolved,
           toggleTheme,
         })
         : children}
