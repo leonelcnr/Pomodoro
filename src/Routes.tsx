@@ -9,6 +9,8 @@ import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import Dashboard from "./pages/Dashboard";
 import { TimerDisplay } from "./features/timer/components/TimerDisplay";
+import Invitacion from "./pages/InvitacionPage";
+import Room from "./pages/RoomPage";
 
 export const router = createBrowserRouter([
     {
@@ -27,6 +29,8 @@ export const router = createBrowserRouter([
                 children: [
                     { path: "/login", element: <Login /> },
                     { path: "/registro", element: <Registro /> },
+                    { path: "/invitacion/:code", element: <Invitacion /> },
+                    { path: "/room/:roomId", element: <Room /> },
                 ],
             },
         ],

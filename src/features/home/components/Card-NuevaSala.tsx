@@ -8,14 +8,13 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import DialogUnirse from "./DialogUnirse"
 
 const CardNuevaSala = () => {
     return (
-        <Card className="w-full h-[250px]">
+        <Card className="w-full h-full">
             <CardHeader>
-                <CardTitle className="">Nueva Sala</CardTitle>
+                <CardTitle className="text-lg">Nueva Sala</CardTitle>
                 <CardDescription>
                     Crea una sala o une a una existente
                 </CardDescription>
@@ -24,16 +23,15 @@ const CardNuevaSala = () => {
                     <Button variant="link">Unirse</Button> */}
                 </CardAction>
             </CardHeader>
-            <CardContent className="h-[150px]">
-
+            <CardContent className="h-3/4">
+                <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Dolorem, unde eligendi tempora autem, molestiae magnam obcaecati exercitationem libero in eum expedita. Quae neque amet, beatae possimus blanditiis facilis dolore officiis?</p>
+                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Iure ipsum nostrum dolor architecto enim. Voluptates fugiat odit laboriosam neque provident, minus sed corrupti, nam id temporibus accusantium, distinctio eligendi. Ad.</p>
             </CardContent>
             <CardFooter className="grid grid-cols-2 gap-2">
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full h-10">
                     Crear
                 </Button>
-                <Button variant="outline" className="w-full">
-                    Unirse
-                </Button>
+                <DialogUnirse />
             </CardFooter>
         </Card>
 

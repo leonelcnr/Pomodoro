@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, useEffect } from "react";
 import supabase from "../config/supabase";
-import { replace, useNavigate } from "react-router-dom";
+import { replace, useNavigate, useSearchParams } from "react-router-dom";
 
 
 const AuthContext = createContext({
@@ -12,6 +12,7 @@ const AuthContext = createContext({
 export const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<any>(null);
     const navigate = useNavigate();
+    const [params] = useSearchParams();
 
     const iniciarSesionConGoogle = async () => {
         try {
@@ -45,6 +46,11 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
             else {
                 setUser(session?.user.user_metadata);
                 console.log("user", session.user)
+
+                if (params.get("redirect")) {
+                    const redirect = params.get("redirect");
+                    navigate(redirect ? decodeURIComponent(redirect) : "/home", { replace: true });
+                }
                 // navigate("/", { replace: true }) //Esto nos esta haciendo quilombo, proba alt tabear, te
             }                                       // redirije siempre al home pq chequea todo el tiempo que esta logeado.
         });

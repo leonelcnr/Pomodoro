@@ -50,18 +50,18 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Down 20% this period <IconTrendingDown className="size-4" />
+            Esta semana 20% menos <IconTrendingDown className="size-4" />
           </div>
           <div className="text-muted-foreground">
-            Acquisition needs attention
+            Recupera el estudio
           </div>
         </CardFooter>
       </Card>
       <Card className="@container/card">
         <CardHeader>
-          <CardDescription>Active Accounts</CardDescription>
+          <CardDescription>Dias de racha</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            45,678
+            14
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -72,7 +72,7 @@ export function SectionCards() {
         </CardHeader>
         <CardFooter className="flex-col items-start gap-1.5 text-sm">
           <div className="line-clamp-1 flex gap-2 font-medium">
-            Strong user retention <IconTrendingUp className="size-4" />
+            <IconTrendingUp className="size-4" />
           </div>
           <div className="text-muted-foreground">Engagement exceed targets</div>
         </CardFooter>

@@ -11,6 +11,7 @@ import {
 import data from "./data.json"
 import CardNuevaSala from "../features/home/components/Card-NuevaSala"
 import { Separator } from "@/components/ui/separator"
+import ChartRadialShape from "../features/home/components/Chart-Radial"
 
 
 const Home = () => {
@@ -32,7 +33,7 @@ const Home = () => {
                             <div className="max-w-full h-full flex flex-col gap-4 py-4 md:gap-6 md:py-6 ">
                                 <div className="grid grid-cols-2 gap-4 p-4 pt-0">
                                     <CardNuevaSala />
-                                    <CardNuevaSala />
+                                    <ChartRadialShape />
                                 </div>
 
                                 <Separator
@@ -40,6 +41,7 @@ const Home = () => {
                                     className="mx-2 data-[orientation=horizontal]:w-full"
                                 />
                                 <div className="w-full h-full flex flex-col gap-4 p-4 pt-0">
+                                    <h1 className="text-2xl font-bold">Estadisticas</h1>
                                     <SectionCards />
                                 </div>
                                 <div className="flex flex-1 flex-col gap-4 p-4 pt-0">

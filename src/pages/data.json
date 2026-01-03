@@ -3,7 +3,7 @@
     "id": 1,
     "header": "Cover page",
     "type": "Cover page",
-    "status": "In Process",
+    "status": "Completada",
     "target": "18",
     "limit": "5",
     "reviewer": "Eddie Lake"
@@ -39,7 +39,7 @@
     "id": 5,
     "header": "Design",
     "type": "Narrative",
-    "status": "In Process",
+    "status": "Completada",
     "target": "2",
     "limit": "16",
     "reviewer": "Jamik Tashpulatov"
@@ -48,7 +48,7 @@
     "id": 6,
     "header": "Capabilities",
     "type": "Narrative",
-    "status": "In Process",
+    "status": "Completada",
     "target": "20",
     "limit": "8",
     "reviewer": "Jamik Tashpulatov"
@@ -57,7 +57,7 @@
     "id": 7,
     "header": "Integration with existing systems",
     "type": "Narrative",
-    "status": "In Process",
+    "status": "Completada",
     "target": "19",
     "limit": "21",
     "reviewer": "Jamik Tashpulatov"
@@ -138,7 +138,7 @@
     "id": 16,
     "header": "Security Measures and Data Protection Policies",
     "type": "Narrative",
-    "status": "In Process",
+    "status": "Completada",
     "target": "6",
     "limit": "36",
     "reviewer": "Assign reviewer"
@@ -183,7 +183,7 @@
     "id": 21,
     "header": "System Architecture Overview",
     "type": "Technical content",
-    "status": "In Process",
+    "status": "Completada",
     "target": "24",
     "limit": "18",
     "reviewer": "Maya Johnson"
@@ -201,7 +201,7 @@
     "id": 23,
     "header": "Compliance Documentation",
     "type": "Legal",
-    "status": "In Process",
+    "status": "Completada",
     "target": "31",
     "limit": "27",
     "reviewer": "Sarah Chen"
@@ -219,7 +219,7 @@
     "id": 25,
     "header": "User Interface Mockups",
     "type": "Visual",
-    "status": "In Process",
+    "status": "Completada",
     "target": "19",
     "limit": "25",
     "reviewer": "Leila Ahmadi"
@@ -237,7 +237,7 @@
     "id": 27,
     "header": "Testing Methodology",
     "type": "Technical content",
-    "status": "In Process",
+    "status": "Completada",
     "target": "17",
     "limit": "14",
     "reviewer": "Assign reviewer"
@@ -255,7 +255,7 @@
     "id": 29,
     "header": "Budget Breakdown",
     "type": "Financial",
-    "status": "In Process",
+    "status": "Completada",
     "target": "13",
     "limit": "16",
     "reviewer": "Jamik Tashpulatov"
@@ -273,7 +273,7 @@
     "id": 31,
     "header": "Competitor Comparison",
     "type": "Research",
-    "status": "In Process",
+    "status": "Completada",
     "target": "21",
     "limit": "19",
     "reviewer": "Assign reviewer"
@@ -291,7 +291,7 @@
     "id": 33,
     "header": "User Personas",
     "type": "Research",
-    "status": "In Process",
+    "status": "Completada",
     "target": "27",
     "limit": "24",
     "reviewer": "Nina Patel"
@@ -309,7 +309,7 @@
     "id": 35,
     "header": "Performance Metrics",
     "type": "Technical content",
-    "status": "In Process",
+    "status": "Completada",
     "target": "23",
     "limit": "26",
     "reviewer": "David Kim"
@@ -327,7 +327,7 @@
     "id": 37,
     "header": "Third-party Integrations",
     "type": "Technical content",
-    "status": "In Process",
+    "status": "Completada",
     "target": "25",
     "limit": "28",
     "reviewer": "Eddie Lake"
@@ -345,7 +345,7 @@
     "id": 39,
     "header": "Localization Strategy",
     "type": "Narrative",
-    "status": "In Process",
+    "status": "Completada",
     "target": "12",
     "limit": "19",
     "reviewer": "Maria Garcia"
@@ -363,7 +363,7 @@
     "id": 41,
     "header": "Data Migration Plan",
     "type": "Technical content",
-    "status": "In Process",
+    "status": "Completada",
     "target": "19",
     "limit": "22",
     "reviewer": "Assign reviewer"
@@ -381,7 +381,7 @@
     "id": 43,
     "header": "Stakeholder Analysis",
     "type": "Research",
-    "status": "In Process",
+    "status": "Completada",
     "target": "11",
     "limit": "14",
     "reviewer": "Eddie Lake"
@@ -399,7 +399,7 @@
     "id": 45,
     "header": "Intellectual Property Rights",
     "type": "Legal",
-    "status": "In Process",
+    "status": "Completada",
     "target": "17",
     "limit": "20",
     "reviewer": "Sarah Johnson"
@@ -417,7 +417,7 @@
     "id": 47,
     "header": "Version Control Strategy",
     "type": "Technical content",
-    "status": "In Process",
+    "status": "Completada",
     "target": "15",
     "limit": "18",
     "reviewer": "Assign reviewer"
@@ -435,7 +435,7 @@
     "id": 49,
     "header": "Regulatory Compliance",
     "type": "Legal",
-    "status": "In Process",
+    "status": "Completada",
     "target": "13",
     "limit": "16",
     "reviewer": "Assign reviewer"
@@ -453,7 +453,7 @@
     "id": 51,
     "header": "Data Analytics Framework",
     "type": "Technical content",
-    "status": "In Process",
+    "status": "Completada",
     "target": "21",
     "limit": "24",
     "reviewer": "Jamik Tashpulatov"
@@ -471,7 +471,7 @@
     "id": 53,
     "header": "Network Security Measures",
     "type": "Technical content",
-    "status": "In Process",
+    "status": "Completada",
     "target": "29",
     "limit": "32",
     "reviewer": "Lisa Wong"
@@ -489,7 +489,7 @@
     "id": 55,
     "header": "Resource Allocation",
     "type": "Planning",
-    "status": "In Process",
+    "status": "Completada",
     "target": "27",
     "limit": "30",
     "reviewer": "Assign reviewer"
@@ -507,7 +507,7 @@
     "id": 57,
     "header": "Communication Protocols",
     "type": "Planning",
-    "status": "In Process",
+    "status": "Completada",
     "target": "15",
     "limit": "18",
     "reviewer": "Assign reviewer"
@@ -525,7 +525,7 @@
     "id": 59,
     "header": "Internationalization Support",
     "type": "Technical content",
-    "status": "In Process",
+    "status": "Completada",
     "target": "23",
     "limit": "26",
     "reviewer": "Jamik Tashpulatov"
@@ -543,7 +543,7 @@
     "id": 61,
     "header": "Monitoring and Alerting System",
     "type": "Technical content",
-    "status": "In Process",
+    "status": "Completada",
     "target": "25",
     "limit": "28",
     "reviewer": "Daniel Park"
@@ -561,7 +561,7 @@
     "id": 63,
     "header": "Documentation Standards",
     "type": "Technical content",
-    "status": "In Process",
+    "status": "Completada",
     "target": "27",
     "limit": "30",
     "reviewer": "Jamik Tashpulatov"
@@ -579,7 +579,7 @@
     "id": 65,
     "header": "Feature Prioritization Matrix",
     "type": "Planning",
-    "status": "In Process",
+    "status": "Completada",
     "target": "19",
     "limit": "22",
     "reviewer": "Emma Davis"
@@ -597,7 +597,7 @@
     "id": 67,
     "header": "Capacity Planning",
     "type": "Planning",
-    "status": "In Process",
+    "status": "Completada",
     "target": "21",
     "limit": "24",
     "reviewer": "Jamik Tashpulatov"
