@@ -41,7 +41,7 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard", //Aca le puse esta ruta pq es la unica que tenemos momentaneamente.
       icon: IconDashboard,
     },
     {
