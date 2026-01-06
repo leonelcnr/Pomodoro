@@ -33,21 +33,19 @@ const Home = () => {
                             <div className="max-w-full h-full flex flex-col gap-4 py-4 md:gap-6 md:py-6 ">
                                 <div className="grid grid-cols-2 gap-4 p-4 pt-0">
                                     <CardNuevaSala />
-                                    <ChartRadialShape />
+                                    {/* <ChartRadialShape /> */}
+
+                                    {/* <SectionCards /> */}
                                 </div>
 
                                 <Separator
                                     orientation="horizontal"
                                     className="mx-2 data-[orientation=horizontal]:w-full"
                                 />
-                                <div className="w-full h-full flex flex-col gap-4 p-4 pt-0">
-                                    <h1 className="text-2xl font-bold">Estadisticas</h1>
-                                    <SectionCards />
+                                <div className="flex flex-col gap-4">
+                                    <h1 className="text-2xl font-bold px-7">Tareas</h1>
+                                    <DataTable data={data} />
                                 </div>
-                                <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-                                    {/* <ChartAreaInteractive /> */}
-                                </div>
-                                <DataTable data={data} />
                             </div>
                         </div>
                     </div>

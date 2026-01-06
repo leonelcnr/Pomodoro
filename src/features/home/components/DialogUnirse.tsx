@@ -51,7 +51,7 @@ const DialogUnirse = () => {
     if (loading) {
         return (
             <Dialog>
-                <DialogTrigger><Button variant="outline" className="w-full h-10">Unirse</Button></DialogTrigger>
+                <DialogTrigger asChild><Button variant="outline" className="w-full h-10">Unirse</Button></DialogTrigger>
                 <DialogContent className="flex flex-col gap-6">
                     <DialogHeader>
                         <DialogTitle>Unirse a la sala</DialogTitle>

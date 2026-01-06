@@ -22,6 +22,7 @@ export const router = createBrowserRouter([
                     { path: "/", element: <Home /> },
                     { path: "/dashboard", element: <Dashboard /> },
                     { path: "/timer", element: <TimerDisplay /> },
+                    { path: "/room/:roomId", element: <Room /> },
                 ],
             },
             {
@@ -30,7 +31,6 @@ export const router = createBrowserRouter([
                     { path: "/login", element: <Login /> },
                     { path: "/registro", element: <Registro /> },
                     { path: "/invitacion/:code", element: <Invitacion /> },
-                    { path: "/room/:roomId", element: <Room /> },
                 ],
             },
         ],
