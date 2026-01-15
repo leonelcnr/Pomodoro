@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import supabase from "../config/supabase";
+import { TimerDisplay } from "../features/timer/components/TimerDisplay";
 
 type Invitacion = { // va en ingles porque asi quedo definido en el supabase
     code: string;
@@ -57,7 +58,7 @@ const RoomPage = () => {
 
     const linkInvitacion = useMemo(() => {
         if (!invitacion?.code) return null;
-        return `${window.location.origin}/room/${invitacion.code}`;
+        return `${window.location.origin}/invitacion/${invitacion.code}`;
     }, [invitacion?.code]);
 
 
@@ -69,6 +70,8 @@ const RoomPage = () => {
                 <div>
                     <div>Código: <b>{invitacion?.code}</b></div>
                     <div>Link: <b>{linkInvitacion}</b></div>
+                    <TimerDisplay />
+
                 </div>
             ) : (
                 <div>No hay invitación activa (o no tenés permiso para verla).</div>

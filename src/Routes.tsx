@@ -19,10 +19,10 @@ export const router = createBrowserRouter([
             {
                 element: <HomeLayout />,
                 children: [
-                    { path: "/", element: <Home /> },
-                    { path: "/dashboard", element: <Dashboard /> },
-                    { path: "/timer", element: <TimerDisplay /> },
-                    { path: "/room/:roomId", element: <Room /> },
+                    { index: true, element: <Home /> },
+                    { path: "dashboard", element: <Dashboard /> },
+                    { path: "timer", element: <TimerDisplay /> },
+                    { path: "room/:roomId", element: <Room /> },
                 ],
             },
             {
@@ -30,9 +30,9 @@ export const router = createBrowserRouter([
                 children: [
                     { path: "/login", element: <Login /> },
                     { path: "/registro", element: <Registro /> },
-                    { path: "/invitacion/:code", element: <Invitacion /> },
                 ],
             },
+            { path: "invitacion/:code", element: <Invitacion /> },
         ],
     },
 ]);

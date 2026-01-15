@@ -1,65 +1,60 @@
 import { Link } from 'react-router-dom';
 import { useTimer } from '../hooks/useTimerActions';
 import { ArrowLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { SlidingNumber } from '@/components/animate-ui/primitives/texts/sliding-number'
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
-// Función auxiliar para formatear segundos a MM:SS
-const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-};
+function DosDigitos({ value }: { value: number }) {
+    const tens = Math.floor(value / 10);
+    const ones = value % 10;
+
+    return (
+        <span className="inline-flex">
+            <SlidingNumber number={tens} initiallyStable />
+            <SlidingNumber number={ones} initiallyStable />
+        </span>
+    );
+}
 
 export const TimerDisplay = () => {
-    const { timeLeft, isActive,mode, toggleTimer, handleReset, setPomodoro, setShortBreak, setLongBreak } = useTimer();
+    const { timeLeft, isActive, mode, toggleTimer, handleReset, setPomodoro, setShortBreak, setLongBreak } = useTimer();
 
     // Cambiamos el título de la pestaña del navegador para ver el tiempo ahí también
     //   document.title = `${formatTime(timeLeft)} - Pomodoro App`;
 
+
     return (
-        <div>
-            <nav className="shadow-sm p-4 sticky top-0 z-10 bg">
-                <Link to="/" className="text-gray-500 hover:text-blue-600 transition">
-                    <ArrowLeft />
-                </Link>
-                <div className="flex gap-4 justify-center mt-6">
-
-                    <button
-                        className={`px-8 py-3 rounded-full font-bold text-xl transition-all ${mode === 'pomodoro' ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-600 hover:bg-gray-500'}`}
-                        onClick={setPomodoro}>Pomodoro</button>
-                    <button
-                        className={`px-8 py-3 rounded-full font-bold text-xl transition-all ${mode === 'shortBreak' ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-600 hover:bg-gray-500'}`}
-                        onClick={setShortBreak}>Short Break</button>
-                    <button
-                        className={`px-8 py-3 rounded-full font-bold text-xl transition-all ${mode === 'longBreak' ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-600 hover:bg-gray-500'}`}
-                        onClick={setLongBreak}>Long Break</button>
-                </div>
+        <div className="flex flex-col items-center justify-center gap-4">
+            <nav className="shadow-sm flex gap-4 justify-center">
+                <Button variant={mode === 'pomodoro' ? 'default' : 'outline'} onClick={setPomodoro}>Pomodoro</Button>
+                <Button variant={mode === 'shortBreak' ? 'default' : 'outline'} onClick={setShortBreak}>Short Break</Button>
+                <Button variant={mode === 'longBreak' ? 'default' : 'outline'} onClick={setLongBreak}>Long Break</Button>
             </nav>
-            <div className="flex flex-col items-center justify-center p-10 bg-gray-800 rounded-2xl shadow-xl text-white">
-                {/* El Reloj Gigante */}
-                <div className="text-9xl font-bold mb-8 font-mono tracking-widest">
-                    {formatTime(timeLeft)}
-                </div>
+            <div className="w-1/2 overflow-hidden rounded-md ">
 
-                {/* Controles */}
-                <div className="flex gap-4 justify-center">
-                    <button
-                        onClick={toggleTimer}
-                        className={`px-8 py-3 rounded-full font-bold text-xl transition-all ${isActive
-                            ? 'bg-red-500 hover:bg-red-600'
-                            : 'bg-green-500 hover:bg-green-600'
-                            }`}
-                    >
-                        {isActive ? 'Pausar' : 'Iniciar'}
-                    </button>
+                <AspectRatio ratio={16 / 9} className="bg-zinc-900 rounded-lg border ">
 
-                    <button
-                        onClick={handleReset}
-                        className="px-8 py-3 rounded-full font-bold text-xl bg-gray-600 hover:bg-gray-500 transition-all"
-                    >
-                        Reiniciar
-                    </button>
-                </div>
+                    <div className="flex flex-col items-center justify-center gap-4 h-full">
+                        {/* El Reloj Gigante */}
+                        <div className="flex items-baseline gap-2 font-mono text-8xl">
+                            <DosDigitos value={(timeLeft - 30) / 60} />
+                            <span>:</span>
+                            <DosDigitos value={timeLeft % 60} />
+                        </div>
+
+                        {/* Controles */}
+                        <div className="flex gap-4 justify-center">
+                            <Button onClick={toggleTimer}>
+                                {isActive ? 'Pausar' : 'Iniciar'}
+                            </Button>
+                            <Button onClick={handleReset} variant="outline">
+                                Reiniciar
+                            </Button>
+                        </div>
+                    </div>
+                </AspectRatio>
             </div>
-        </div>
+        </div >
     );
 };

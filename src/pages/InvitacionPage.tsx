@@ -1,13 +1,20 @@
-// src/pages/InvitePage.tsx
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import supabase from "../config/supabase";
-// si tenés AuthContext, mejor: import { useAuth } from "../context/Auth";
+import { Button } from "@/components/ui/button"
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from "@/components/ui/empty"
+import { Spinner } from "@/components/ui/spinner"
 
 const Invitacion = () => {
     const { code } = useParams<{ code: string }>();
     const navigate = useNavigate();
-    const location = useLocation();
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     useEffect(() => {
@@ -21,7 +28,7 @@ const Invitacion = () => {
             // 1) chequeo sesión (si no hay login, mandar a login y volver)
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
-                const redirect = encodeURIComponent(`/invite/${inviteCode}`);
+                const redirect = encodeURIComponent(`/invitacion/${inviteCode}`);
                 navigate(`/login?redirect=${redirect}`, { replace: true, state: { from: location.pathname } });
                 return;
             }
@@ -43,24 +50,39 @@ const Invitacion = () => {
     // UI simple (podés reemplazar por Card/Loader de shadcn)
     if (errorMsg) {
         return (
-            <div className="p-6">
-                <h1 className="text-xl font-semibold">No se pudo unir</h1>
-                <p className="mt-2 opacity-80">{errorMsg}</p>
-                <button
-                    className="mt-4 rounded-md border px-4 py-2"
-                    onClick={() => navigate("/home")}
-                >
-                    Volver al Home
-                </button>
-            </div>
+            <Empty className="w-full h-screen flex flex-col items-center justify-center">
+                <EmptyHeader>
+                    <EmptyTitle>Error</EmptyTitle>
+                    <EmptyDescription>
+                        {errorMsg}
+                    </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                    <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+                        Volver al inicio
+                    </Button>
+                </EmptyContent>
+            </Empty>
         );
     }
 
     return (
-        <div className="p-6">
-            <h1 className="text-xl font-semibold">Uniéndote a la sala…</h1>
-            <p className="mt-2 opacity-80">Un segundo.</p>
-        </div>
+        <Empty className="w-full h-screen flex flex-col items-center justify-center">
+            <EmptyHeader>
+                <EmptyMedia variant="icon">
+                    <Spinner />
+                </EmptyMedia>
+                <EmptyTitle>Procesando tu invitación...</EmptyTitle>
+                <EmptyDescription>
+                    Por favor espera mientras procesamos tu invitación. No recargues la página.
+                </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+                <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+                    Cancelar
+                </Button>
+            </EmptyContent>
+        </Empty>
     );
 }
 
