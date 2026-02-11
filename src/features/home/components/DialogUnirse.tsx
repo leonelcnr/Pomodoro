@@ -25,26 +25,23 @@ const DialogUnirse = () => {
 
     const join = async () => {
 
+
+        setErrorMsg(null);
+        const code = parsearInvitacion(value);
+        if (!code) {
+            setErrorMsg("Pegá un código válido o un link de invitación.");
+            return;
+        }
+
         setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
-        }, 8000);
-        // setErrorMsg(null);
-        // const code = parsearInvitacion(value);
-        // if (!code) {
-        //     setErrorMsg("Pegá un código válido o un link de invitación.");
-        //     return;
-        // }
+        const { data: roomId, error } = await supabase.rpc("join_room", { p_code: code });
+        setLoading(false);
 
-        // setLoading(true);
-        // const { data: roomId, error } = await supabase.rpc("join_room", { p_code: code });
-        // setLoading(false);
-
-        // if (error) {
-        //     setErrorMsg(error.message || "No se pudo unir.");
-        //     return;
-        // }
-        // navigate(`/room/${roomId}`);
+        if (error) {
+            setErrorMsg(error.message || "No se pudo unir.");
+            return;
+        }
+        navigate(`/room/${roomId}`);
     };
 
 

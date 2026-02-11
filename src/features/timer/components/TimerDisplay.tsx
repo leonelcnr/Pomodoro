@@ -1,9 +1,9 @@
-import { Link } from 'react-router-dom';
 import { useTimer } from '../hooks/useTimerActions';
-import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SlidingNumber } from '@/components/animate-ui/primitives/texts/sliding-number'
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { Settings } from '@/components/animate-ui/icons/settings';
+import { Link } from '@/components/animate-ui/icons/link';
 
 function DosDigitos({ value }: { value: number }) {
     const tens = Math.floor(value / 10);
@@ -30,6 +30,10 @@ export const TimerDisplay = () => {
                 <Button variant={mode === 'pomodoro' ? 'default' : 'outline'} onClick={setPomodoro}>Pomodoro</Button>
                 <Button variant={mode === 'shortBreak' ? 'default' : 'outline'} onClick={setShortBreak}>Short Break</Button>
                 <Button variant={mode === 'longBreak' ? 'default' : 'outline'} onClick={setLongBreak}>Long Break</Button>
+                <div className='flex justify-between gap-2'>
+                    <Settings animateOnHover scale={0} />
+                    <Link animateOnHover />
+                </div>
             </nav>
             <div className="w-1/2 overflow-hidden rounded-md ">
 
