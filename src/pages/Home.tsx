@@ -1,7 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar"
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
-import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
 import {
     SidebarInset,
@@ -9,9 +7,8 @@ import {
 } from "@/components/ui/sidebar"
 
 import data from "./data.json"
-import CardNuevaSala from "../features/home/components/Card-NuevaSala"
 import { Separator } from "@/components/ui/separator"
-import ChartRadialShape from "../features/home/components/Chart-Radial"
+import SalaNueva from "../features/home/components/SalaNueva"
 
 
 const Home = () => {
@@ -30,12 +27,9 @@ const Home = () => {
                     <SiteHeader />
                     <div className="flex flex-1 flex-col">
                         <div className="@container/main flex flex-1 flex-col gap-0 ">
-                            <div className="max-w-full h-full flex flex-col gap-4 py-4 md:gap-6 md:py-6 ">
-                                <div className="grid grid-cols-2 gap-4 p-4 pt-0">
-                                    <CardNuevaSala />
-                                    {/* <ChartRadialShape /> */}
-
-                                    {/* <SectionCards /> */}
+                            <div className="max-w-full h-full flex justify-center flex-col gap-4 py-4 md:gap-6 md:py-6 ">
+                                <div className="w-full">
+                                    <SalaNueva />
                                 </div>
 
                                 <Separator

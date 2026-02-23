@@ -2,8 +2,13 @@ import { useTimer } from '../hooks/useTimerActions';
 import { Button } from '@/components/ui/button'
 import { SlidingNumber } from '@/components/animate-ui/primitives/texts/sliding-number'
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Settings } from '@/components/animate-ui/icons/settings';
-import { Link } from '@/components/animate-ui/icons/link';
+import DialogShare from './Dialog-Share';
+import DialogSettings from './DialogSettings';
+import { Play } from 'lucide-react';
+import { Pause } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
+
+
 
 function DosDigitos({ value }: { value: number }) {
     const tens = Math.floor(value / 10);
@@ -16,44 +21,49 @@ function DosDigitos({ value }: { value: number }) {
         </span>
     );
 }
+export interface TimerSettings {
+    pomodoro: number;
+    shortBreak: number;
+    longBreak: number;
+}
 
-export const TimerDisplay = () => {
+
+export const TimerDisplay = ({ link, codigo }: { link: string, codigo: string }) => {
     const { timeLeft, isActive, mode, toggleTimer, handleReset, setPomodoro, setShortBreak, setLongBreak } = useTimer();
 
     // Cambiamos el título de la pestaña del navegador para ver el tiempo ahí también
     //   document.title = `${formatTime(timeLeft)} - Pomodoro App`;
 
+    const handleSaveSettings = (newSettings: TimerSettings) => {
+        console.log('Settings saved:', newSettings);
+        // Aquí puedes guardar los settings en localStorage o en una base de datos
+    };
 
     return (
         <div className="flex flex-col items-center justify-center gap-4">
-            <nav className="shadow-sm flex gap-4 justify-center">
-                <Button variant={mode === 'pomodoro' ? 'default' : 'outline'} onClick={setPomodoro}>Pomodoro</Button>
-                <Button variant={mode === 'shortBreak' ? 'default' : 'outline'} onClick={setShortBreak}>Short Break</Button>
-                <Button variant={mode === 'longBreak' ? 'default' : 'outline'} onClick={setLongBreak}>Long Break</Button>
-                <div className='flex justify-between gap-2'>
-                    <Settings animateOnHover scale={0} />
-                    <Link animateOnHover />
-                </div>
-            </nav>
+
+            <div className='flex justify-between gap-2'>
+                <DialogShare link={link} codigo={codigo} />
+                <DialogSettings currentSettings={{ pomodoro: 25, shortBreak: 5, longBreak: 15 }} onSaveSettings={handleSaveSettings} />
+            </div>
             <div className="w-1/2 overflow-hidden rounded-md ">
 
-                <AspectRatio ratio={16 / 9} className="bg-zinc-900 rounded-lg border ">
-
+                <AspectRatio ratio={16 / 9} className=" rounded-lg border ">
                     <div className="flex flex-col items-center justify-center gap-4 h-full">
                         {/* El Reloj Gigante */}
                         <div className="flex items-baseline gap-2 font-mono text-8xl">
-                            <DosDigitos value={(timeLeft - 30) / 60} />
+                            <DosDigitos value={Math.floor(timeLeft / 60)} />
                             <span>:</span>
                             <DosDigitos value={timeLeft % 60} />
                         </div>
 
                         {/* Controles */}
-                        <div className="flex gap-4 justify-center">
-                            <Button onClick={toggleTimer}>
-                                {isActive ? 'Pausar' : 'Iniciar'}
+                        <div className="grid grid-cols-2 gap-4 w-2/5 h-10 justify-center items-center">
+                            <Button onClick={toggleTimer} className='w-full h-full' variant={isActive ? "outline" : "default"}>
+                                {isActive ? <Pause /> : <Play />}
                             </Button>
-                            <Button onClick={handleReset} variant="outline">
-                                Reiniciar
+                            <Button onClick={handleReset} variant="outline" className='w-full h-full'>
+                                <RotateCcw />
                             </Button>
                         </div>
                     </div>

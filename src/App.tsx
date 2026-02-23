@@ -11,6 +11,7 @@ export default function App({ children }: { children: React.ReactNode }) {
 			disableTransitionOnChange={false}
 		>
 			<div className='h-dvh w-dvw overflow-x-hidden'>{children}</div>
+
 		</ThemeProvider>
 	);
 }

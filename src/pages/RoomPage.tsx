@@ -19,7 +19,7 @@ function InvitacionValida(inv: Invitacion) {
 
 const RoomPage = () => {
     const { roomId } = useParams();
-    const [invitacion, setInvitacion] = useState<Invitacion | null>(null);
+    const [invitacion, setInvitacion] = useState<Invitacion | null>();
     const [cargandoInvitacion, setCargandoInvitacion] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -63,15 +63,10 @@ const RoomPage = () => {
 
 
     return (
-        <div>
-            <h1>Sala {roomId}</h1>
-
+        <div className="w-full min-h-dvh py-20 ">
             {cargandoInvitacion ? (<div>Cargando invitación…</div>) : linkInvitacion ? (
-                <div>
-                    <div>Código: <b>{invitacion?.code}</b></div>
-                    <div>Link: <b>{linkInvitacion}</b></div>
-                    <TimerDisplay />
-
+                <div className="w-full">
+                    <TimerDisplay link={linkInvitacion} codigo={invitacion?.code || ""} />
                 </div>
             ) : (
                 <div>No hay invitación activa (o no tenés permiso para verla).</div>
