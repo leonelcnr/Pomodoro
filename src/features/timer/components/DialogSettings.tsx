@@ -50,8 +50,8 @@ const DialogSettings: React.FC<DialogSettingsProps> = ({
         <Dialog>
             {/* EL BOTÓN QUE ABRE EL MODAL */}
             <DialogTrigger asChild>
-                <Button variant="outline" size="icon">
-                    <Settings className="h-5 w-5" />
+                <Button variant="outline" size="icon" className="h-10 w-10">
+                    <Settings />
                 </Button>
             </DialogTrigger>
 

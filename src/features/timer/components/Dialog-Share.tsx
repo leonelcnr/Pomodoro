@@ -18,7 +18,7 @@ const DialogShare = ({ link, codigo }: { link: string, codigo: string }) => {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <Button variant="outline" size="icon"><Share2 /></Button>
+                <Button variant="outline" size="icon" className="h-10 w-10"><Share2 /></Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
