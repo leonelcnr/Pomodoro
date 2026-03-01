@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useTimerStore } from '../../../store/timerStore';
+import supabase from '@/config/supabase';
+import { UserAuth } from '@/services/AuthContexto';
 
 export const useTimer = () => {
+  const { user } = UserAuth();
   // Traemos las funciones y estados de Zustand
   const { timeLeft, isActive, mode, settings, setTimeLeft, setIsActive, resetTimer, setMode } = useTimerStore();
   
@@ -36,6 +39,16 @@ export const useTimer = () => {
           // AQUÍ PODRÍAMOS DISPARAR UN SONIDO O UNA NOTIFICACIÓN
           clearInterval(interval);
           
+          // Guardar sesión de estudio si estábamos en pomodoro
+          if (mode === 'pomodoro' && user) {
+            const minutesToSave = settings.pomodoro;
+            supabase.from('study_sessions').insert([
+              { user_id: user.id, duration_minutes: minutesToSave }
+            ]).then(({error}) => {
+                if(error) console.error("Error saving study session:", error);
+            });
+          }
+
           // Lógica de descanso automático
           if (settings.autoBreak && mode === 'pomodoro') {
             setMode('shortBreak');
@@ -57,7 +70,7 @@ export const useTimer = () => {
 
     // Cleanup: Si el componente se desmonta, limpiamos el intervalo
     return () => clearInterval(interval);
-  }, [isActive, setTimeLeft, setIsActive, timeLeft]); // Dependencias
+  }, [isActive, setTimeLeft, setIsActive, timeLeft, mode, settings.pomodoro, user]); // Dependencias
 
   // Funciones para que usen los botones
   const toggleTimer = () => setIsActive(!isActive);

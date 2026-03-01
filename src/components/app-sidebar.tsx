@@ -2,24 +2,17 @@ import * as React from "react"
 import {
   IconCamera,
   IconChartBar,
-  IconDashboard,
-  IconDashboardOff,
   IconDatabase,
   IconFileAi,
   IconFileDescription,
   IconFileWord,
-  IconFolder,
   IconHelp,
-  IconHomeStats,
   IconInnerShadowTop,
-  IconListDetails,
   IconReport,
   IconSearch,
   IconSettings,
-  IconUsers,
 } from "@tabler/icons-react"
 
-import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
@@ -34,7 +27,7 @@ import {
 } from "@/components/ui/sidebar"
 import { ThemeTogglerButton } from "@/components/ui/theme-toggler"
 import { UserAuth } from "@/services/AuthContexto"
-import { user } from "@heroui/react"
+import { DailyStreak } from "./daily-streak"
 
 
 
@@ -151,15 +144,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Pomodoreando</span>
+            <SidebarMenuButton size="lg" asChild>
+              <a href="/">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <IconInnerShadowTop className="size-4" />
+                </div>
+                <div className="flex flex-col gap-0.5 leading-none">
+                  <span className="font-semibold">Pomodoreando</span>
+                </div>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <DailyStreak />
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>

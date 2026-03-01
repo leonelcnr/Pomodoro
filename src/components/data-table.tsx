@@ -1,30 +1,11 @@
 import * as React from "react"
-import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type UniqueIdentifier,
-} from "@dnd-kit/core"
-import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
-import {
-  arrayMove,
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
+
 import {
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
   IconDotsVertical,
-  IconGripVertical,
   IconLayoutColumns,
   IconPlus,
   IconTrendingUp,
@@ -46,7 +27,7 @@ import {
 } from "@tanstack/react-table"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { z } from "zod"
-import { Trash2, Edit2, Star, X, ArrowUp, ArrowRight, ArrowDown, CheckCircle2, Timer, CircleDashed } from "lucide-react"
+import { Trash2, Edit2, Star, X, ArrowUp, ArrowRight, ArrowDown, CheckCircle2, Timer, CircleDashed, ChevronsUpDown, EyeOff } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
@@ -119,27 +100,57 @@ export const schema = z.object({
   user_id: z.string().optional() // ID del dueño
 })
 
+
 /**
- * Componente DragHandle - Manilla de arrastre para reordenar filas
- * Permite al usuario arrastrar y soltar tareas para reordenarlas
- * @param id - ID de la tarea que se puede arrastrar
+ * Componente DataTableColumnHeader - Cabecera ordenable para las columnas
  */
-function DragHandle({ id }: { id: number }) {
-  const { attributes, listeners } = useSortable({
-    id,
-  })
+function DataTableColumnHeader({
+  column,
+  title,
+}: {
+  column: any;
+  title: string;
+}) {
+  if (!column.getCanSort()) {
+    return <div className="text-xs font-semibold">{title}</div>
+  }
 
   return (
-    <Button
-      {...attributes}
-      {...listeners}
-      variant="ghost"
-      size="icon"
-      className="text-muted-foreground size-7 hover:bg-transparent"
-    >
-      <IconGripVertical className="text-muted-foreground size-3" />
-      <span className="sr-only">Arrastrar para reordenar</span>
-    </Button>
+    <div className="flex items-center space-x-2 w-full">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-3 h-8 data-[state=open]:bg-accent text-xs font-semibold hover:bg-zinc-800/60"
+          >
+            <span>{title}</span>
+            {column.getIsSorted() === "desc" ? (
+              <ArrowDown className="ml-2 h-4 w-4" />
+            ) : column.getIsSorted() === "asc" ? (
+              <ArrowUp className="ml-2 h-4 w-4" />
+            ) : (
+              <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="bg-zinc-950 border-zinc-800">
+          <DropdownMenuItem className="cursor-pointer" onClick={() => column.toggleSorting(false)}>
+            <ArrowUp className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+            Ascendente
+          </DropdownMenuItem>
+          <DropdownMenuItem className="cursor-pointer" onClick={() => column.toggleSorting(true)}>
+            <ArrowDown className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+            Descendente
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-zinc-800" />
+          <DropdownMenuItem className="cursor-pointer" onClick={() => column.toggleVisibility(false)}>
+            <EyeOff className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+            Ocultar columna
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   )
 }
 
@@ -153,12 +164,6 @@ const getColumns = (
   onEditTask: (task: z.infer<typeof schema>) => void,
   onMoveTask?: (id: number) => void // Nueva acción opcional
 ): ColumnDef<z.infer<typeof schema>>[] => [
-    // Columna de arrastre - permite reordenar tareas
-    {
-      id: "drag",
-      header: () => null,
-      cell: ({ row }) => <DragHandle id={row.original.id} />,
-    },
     // Columna de selección - permite seleccionar múltiples tareas
     {
       id: "select",
@@ -188,15 +193,15 @@ const getColumns = (
     // Columna de título de la tarea (Badge + Título)
     {
       accessorKey: "header",
-      header: "Título",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Título" />,
       cell: ({ row }) => {
         return (
           <div className="flex items-center space-x-2">
             {row.original.favorite && <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />}
-            <Badge variant="outline" className="text-muted-foreground px-1.5 whitespace-nowrap">
+            <Badge variant="outline" className={`px-2 py-0.5 whitespace-nowrap font-medium text-[11px] text-foreground capitalize border-zinc-700/50 bg-transparent ${row.original.status === 'Completada' ? 'opacity-70' : ''}`}>
               {row.original.type}
             </Badge>
-            <span className="max-w-[500px] truncate font-medium">
+            <span className={`max-w-[500px] truncate font-medium ${row.original.status === 'Completada' ? 'line-through text-muted-foreground opacity-70' : ''}`}>
               <TableCellViewer item={row.original} />
             </span>
           </div>
@@ -207,7 +212,7 @@ const getColumns = (
     // Columna de estado - muestra si está completada, en progreso o sin empezar
     {
       accessorKey: "status",
-      header: "Estado",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Estado" />,
       cell: ({ row }) => (
         <Badge variant="outline" className="text-muted-foreground px-1.5 flex items-center gap-1.5">
           {row.original.status === "Completada" ? (
@@ -228,7 +233,13 @@ const getColumns = (
     // Columna de Prioridad
     {
       accessorKey: "priority",
-      header: "Prioridad",
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Prioridad" />,
+      sortingFn: (rowA, rowB, columnId) => {
+        const priorityValues: Record<string, number> = { "High": 3, "Alta": 3, "Medium": 2, "Media": 2, "Low": 1, "Baja": 1 };
+        const valA = priorityValues[rowA.getValue(columnId) as string] || 2;
+        const valB = priorityValues[rowB.getValue(columnId) as string] || 2;
+        return valA - valB;
+      },
       cell: ({ row }) => {
         const priorityStr = row.original.priority || "Medium"
         const isHigh = priorityStr === "High" || priorityStr === "Alta"
@@ -290,36 +301,6 @@ const getColumns = (
     },
   ]
 
-/**
- * Componente DraggableRow - Fila de tabla arrastrable
- * Permite al usuario arrastrar y soltar filas para reordenar las tareas
- * @param row - Los datos de la fila de la tabla
- */
-function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
-  // Hook de useSortable para manejar el arrastre
-  const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
-  })
-
-  return (
-    <TableRow
-      data-state={row.getIsSelected() && "selected"}
-      data-dragging={isDragging}
-      ref={setNodeRef}
-      className="relative z-0 data-[dragging=true]:z-10 data-[dragging=true]:opacity-80"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition: transition,
-      }}
-    >
-      {row.getVisibleCells().map((cell) => (
-        <TableCell key={cell.id}>
-          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-        </TableCell>
-      ))}
-    </TableRow>
-  )
-}
 
 /**
  * Componente principal DataTable - Tabla de gestión de tareas
@@ -363,7 +344,6 @@ export function DataTable({
     type: "",
   })
 
-  const sortableId = React.useId()
 
   const handleDeleteTask = (id: number) => {
     const newData = data.filter((task) => task.id !== id);
@@ -422,18 +402,6 @@ export function DataTable({
   // Derive columns here to pass the delete function
   const columns = React.useMemo(() => getColumns(handleDeleteTask, handleToggleFavorite, handleEditTask, onMoveTask), [data, onMoveTask])
 
-  // Sensores para detectar eventos de mouse, touch y teclado para el arrastre
-  const sensors = useSensors(
-    useSensor(MouseSensor, {}),
-    useSensor(TouchSensor, {}),
-    useSensor(KeyboardSensor, {})
-  )
-
-  // Memorización de los IDs de las tareas para optimizar el rendimiento
-  const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data?.map(({ id }) => id) || [],
-    [data]
-  )
 
   // Configuración de la tabla usando React Table
   const table = useReactTable({
@@ -463,24 +431,22 @@ export function DataTable({
 
   const handleDeleteSelected = () => {
     const selectedIds = table.getFilteredSelectedRowModel().rows.map(r => r.original.id)
-    setData((prev) => prev.filter((task) => !selectedIds.includes(task.id)))
+    const newData = data.filter((task) => !selectedIds.includes(task.id))
+    setData(newData)
+    onTasksChange?.(newData)
     table.resetRowSelection()
   }
 
-  /**
-   * Función handleDragEnd - Maneja el evento cuando se termina de arrastrar una fila
-   * Reordena las tareas en el array de datos
-   */
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (active && over && active.id !== over.id) {
-      setData((data) => {
-        const oldIndex = dataIds.indexOf(active.id)
-        const newIndex = dataIds.indexOf(over.id)
-        return arrayMove(data, oldIndex, newIndex) // Mueve la tarea de una posición a otra
-      })
-    }
+  const handleCompleteSelected = () => {
+    const selectedIds = table.getFilteredSelectedRowModel().rows.map(r => r.original.id)
+    const newData = data.map((task) =>
+      selectedIds.includes(task.id) ? { ...task, status: "Completada" } : task
+    )
+    setData(newData)
+    onTasksChange?.(newData)
+    table.resetRowSelection()
   }
+
 
   return (
     <div className="space-y-4">
@@ -587,15 +553,26 @@ export function DataTable({
         </div>
         <div className="flex items-center space-x-2">
           {table.getFilteredSelectedRowModel().rows.length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-8"
-              onClick={handleDeleteSelected}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Borrar Seleccionados
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-green-600 border-green-600/20 hover:bg-green-600/10 hover:text-green-700 dark:text-green-500 dark:border-green-500/20 dark:hover:bg-green-500/10 dark:hover:text-green-400"
+                onClick={handleCompleteSelected}
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                Completar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-8"
+                onClick={handleDeleteSelected}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Borrar
+              </Button>
+            </>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -722,55 +699,52 @@ export function DataTable({
         </div>
       </div>
       <div className="overflow-hidden rounded-lg border">
-        <DndContext
-          collisionDetection={closestCenter}
-          modifiers={[restrictToVerticalAxis]}
-          onDragEnd={handleDragEnd}
-          sensors={sensors}
-          id={sortableId}
-        >
-          <Table>
-            <TableHeader className="sticky top-0 z-10">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
-                      <TableHead key={header.id} colSpan={header.colSpan}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                      </TableHead>
-                    )
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody className="**:data-[slot=table-cell]:first:w-8">
-              {table.getRowModel().rows?.length ? (
-                <SortableContext
-                  items={dataIds}
-                  strategy={verticalListSortingStrategy}
+        <Table>
+          <TableHeader className="sticky top-0 z-10">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id} colSpan={header.colSpan}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                    </TableHead>
+                  )
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody className="**:data-[slot=table-cell]:first:w-8">
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className={`transition-all ${row.original.status === "Completada" ? "opacity-60 bg-muted/30" : ""}`}
                 >
-                  {table.getRowModel().rows.map((row) => (
-                    <DraggableRow key={row.id} row={row} />
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
                   ))}
-                </SortableContext>
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No hay resultados.
-                  </TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </DndContext>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  No hay resultados.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
       <div className="flex items-center justify-between px-4">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
