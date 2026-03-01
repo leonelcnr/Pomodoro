@@ -112,9 +112,11 @@ export const schema = z.object({
   header: z.string(),    // Título/nombre de la tarea
   type: z.string(),      // Tipo de tarea
   status: z.string(),    // Estado: Completada, En Progreso, Sin Empezar
-  limit: z.string(),     // Límite o fecha límite
+  limit: z.string().optional(),     // Límite o fecha límite
   favorite: z.boolean().optional(), // Tarea favorita o destacada
   priority: z.string().optional(),
+  room_id: z.string().nullable().optional(), // Null si es personal, con ID si es de sala
+  user_id: z.string().optional() // ID del dueño
 })
 
 /**
@@ -148,7 +150,8 @@ function DragHandle({ id }: { id: number }) {
 const getColumns = (
   onDeleteTask: (id: number) => void,
   onToggleFavorite: (id: number) => void,
-  onEditTask: (task: z.infer<typeof schema>) => void
+  onEditTask: (task: z.infer<typeof schema>) => void,
+  onMoveTask?: (id: number) => void // Nueva acción opcional
 ): ColumnDef<z.infer<typeof schema>>[] => [
     // Columna de arrastre - permite reordenar tareas
     {
@@ -270,6 +273,12 @@ const getColumns = (
               <Star className={`mr-2 h-4 w-4 ${row.original.favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
               {row.original.favorite ? 'Quitar Favorito' : 'Favorito'}
             </DropdownMenuItem>
+            {onMoveTask && (
+              <DropdownMenuItem onClick={() => onMoveTask(row.original.id)}>
+                <ArrowRight className="mr-2 h-4 w-4" />
+                {row.original.room_id ? 'Hacer Personal' : 'Mover a la Sala'}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={() => onDeleteTask(row.original.id)}>
               <Trash2 className="mr-2 h-4 w-4" />
@@ -319,11 +328,20 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
  */
 export function DataTable({
   data: initialData,
+  onTasksChange,
+  onMoveTask,
 }: {
-  data: z.infer<typeof schema>[]
+  data: z.infer<typeof schema>[];
+  onTasksChange?: (newData: z.infer<typeof schema>[]) => void;
+  onMoveTask?: (id: number) => void;
 }) {
   // Estados para manejar los datos y el comportamiento de la tabla
   const [data, setData] = React.useState(() => initialData) // Datos de las tareas
+
+  // Actualizar el estado interno si las props cambian (útil para realtime de Supabase)
+  React.useEffect(() => {
+    setData(initialData);
+  }, [initialData]);
   const [rowSelection, setRowSelection] = React.useState({}) // Filas seleccionadas
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({}) // Visibilidad de columnas
@@ -348,13 +366,17 @@ export function DataTable({
   const sortableId = React.useId()
 
   const handleDeleteTask = (id: number) => {
-    setData((prev) => prev.filter((task) => task.id !== id))
+    const newData = data.filter((task) => task.id !== id);
+    setData(newData);
+    onTasksChange?.(newData);
   }
 
   const handleToggleFavorite = (id: number) => {
-    setData((prev) => prev.map((task) =>
+    const newData = data.map((task) =>
       task.id === id ? { ...task, favorite: !task.favorite } : task
-    ))
+    );
+    setData(newData);
+    onTasksChange?.(newData);
   }
 
   const handleEditTask = (task: z.infer<typeof schema>) => {
@@ -365,12 +387,13 @@ export function DataTable({
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault()
 
+    let newData = [...data];
     if (newTask.id) {
       // Edit existing
-      setData((prev) => prev.map(t => t.id === newTask.id ? { ...t, ...newTask } as z.infer<typeof schema> : t))
+      newData = data.map(t => t.id === newTask.id ? { ...t, ...newTask } as z.infer<typeof schema> : t);
     } else {
-      // Add new
-      const newId = data.length > 0 ? Math.max(...data.map(d => d.id)) + 1 : 1;
+      // Add new: Siempre generamos un ID temporal súper alto para que RoomPage lo detecte como INSERT
+      const newId = Date.now() + Math.floor(Math.random() * 1000);
       const newTaskEntry: z.infer<typeof schema> = {
         id: newId,
         header: newTask.header || "Nueva Tarea",
@@ -379,9 +402,12 @@ export function DataTable({
         limit: "N/A",
         favorite: newTask.favorite || false,
         priority: newTask.priority || "Medium",
+        room_id: newTask.room_id || null, // Se puede heredar al crear
       }
-      setData((prev) => [...prev, newTaskEntry])
+      newData = [...data, newTaskEntry];
     }
+    setData(newData);
+    onTasksChange?.(newData);
 
     setIsDialogOpen(false) // Close dialog
     // Reset form
@@ -394,7 +420,7 @@ export function DataTable({
   }
 
   // Derive columns here to pass the delete function
-  const columns = React.useMemo(() => getColumns(handleDeleteTask, handleToggleFavorite, handleEditTask), [])
+  const columns = React.useMemo(() => getColumns(handleDeleteTask, handleToggleFavorite, handleEditTask, onMoveTask), [data, onMoveTask])
 
   // Sensores para detectar eventos de mouse, touch y teclado para el arrastre
   const sensors = useSensors(

@@ -19,6 +19,8 @@ interface TimerState {
   setMode: (mode: 'pomodoro' | 'shortBreak' | 'longBreak') => void;
   setSettings: (settings: { pomodoro: number; shortBreak: number; longBreak: number; autoBreak: boolean }) => void;
   resetTimer: () => void;
+  // Para la sincronización (nuevo)
+  setTimerState: (state: { timeLeft: number; isActive: boolean; mode: 'pomodoro' | 'shortBreak' | 'longBreak'; updatedAt?: string }) => void;
 }
 
 export const useTimerStore = create<TimerState>((set, get) => ({
@@ -35,7 +37,21 @@ export const useTimerStore = create<TimerState>((set, get) => ({
 
   setTimeLeft: (time) => set({ timeLeft: time }),
   setIsActive: (active) => set({ isActive: active }),
-  setSettings: (settings) => set({ settings }),
+  setSettings: (settings) => set((state) => {
+    const updates: Partial<TimerState> = { settings };
+    
+    if (!state.isActive) {
+      const times = {
+        pomodoro: settings.pomodoro * 60,
+        shortBreak: settings.shortBreak * 60,
+        longBreak: settings.longBreak * 60,
+      };
+      updates.timeLeft = times[state.mode];
+      updates.initialTime = times[state.mode];
+    }
+
+    return updates;
+  }),
   setMode: (mode) => {
     const { settings } = get();
     // Cuando cambiamos de modo, reseteamos el tiempo según el modo
@@ -47,4 +63,27 @@ export const useTimerStore = create<TimerState>((set, get) => ({
     set({ mode, timeLeft: times[mode], initialTime: times[mode], isActive: false });
   },
   resetTimer: () => set({ timeLeft: get().initialTime, isActive: false }),
+  setTimerState: (payload) => set((state) => {
+    // Si viene la fecha de actualización y el reloj está activo, calculamos la desviación
+    let newTimeLeft = payload.timeLeft;
+    if (payload.isActive && payload.updatedAt) {
+      const elapsedMilliseconds = Date.now() - new Date(payload.updatedAt).getTime();
+      const elapsedSeconds = Math.floor(elapsedMilliseconds / 1000);
+      newTimeLeft = Math.max(0, payload.timeLeft - elapsedSeconds);
+    }
+    
+    // Si cambia el modo por red, actualizamos también initialTime
+    const times = {
+        pomodoro: state.settings.pomodoro * 60,
+        shortBreak: state.settings.shortBreak * 60,
+        longBreak: state.settings.longBreak * 60,
+    };
+
+    return {
+      timeLeft: newTimeLeft,
+      isActive: payload.isActive,
+      mode: payload.mode,
+      initialTime: state.mode !== payload.mode ? times[payload.mode] : state.initialTime
+    };
+  }),
 }));

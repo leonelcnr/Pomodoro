@@ -55,7 +55,11 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
                 navigate("/login", { replace: true });
             }
             else {
-                setUser(session?.user.user_metadata);
+                setUser({
+                    ...session?.user.user_metadata,
+                    id: session?.user.id,
+                    email: session?.user.email,
+                });
                 console.log("user", session.user)
 
                 if (params.get("redirect")) {
