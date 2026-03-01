@@ -3,12 +3,14 @@ import {
   IconCamera,
   IconChartBar,
   IconDashboard,
+  IconDashboardOff,
   IconDatabase,
   IconFileAi,
   IconFileDescription,
   IconFileWord,
   IconFolder,
   IconHelp,
+  IconHomeStats,
   IconInnerShadowTop,
   IconListDetails,
   IconReport,
@@ -31,6 +33,10 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { ThemeTogglerButton } from "@/components/ui/theme-toggler"
+import { UserAuth } from "@/services/AuthContexto"
+import { user } from "@heroui/react"
+
+
 
 const data = {
   user: {
@@ -42,28 +48,9 @@ const data = {
     {
       title: "Dashboard",
       url: "/dashboard", //Aca le puse esta ruta pq es la unica que tenemos momentaneamente.
-      icon: IconDashboard,
-    },
-    {
-      title: "Lifecycle",
-      url: "#",
-      icon: IconListDetails,
-    },
-    {
-      title: "Analytics",
-      url: "#",
       icon: IconChartBar,
     },
-    {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
-    },
+
   ],
   navClouds: [
     {
@@ -151,6 +138,14 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+
+  const auth = UserAuth();
+  const user = {
+    name: auth.user?.name || "Usuario",
+    email: auth.user?.email || "",
+    avatar: auth.user?.avatar_url || ""
+  };
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -158,8 +153,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
+              className="data-[slot=sidebar-menu-button]:!p-1.5">
               <a href="#">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Pomodoreando</span>
@@ -170,12 +164,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
+        {/* <NavDocuments items={data.documents} /> */}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <ThemeTogglerButton />
-        <NavUser user={data.user} />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <ThemeTogglerButton className="w-full h-8" />
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )

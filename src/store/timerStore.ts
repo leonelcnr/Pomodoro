@@ -6,11 +6,18 @@ interface TimerState {
   initialTime: number;   // Para poder resetear (ej: 25 * 60)
   isActive: boolean;     // ¿Está corriendo el reloj?
   mode: 'pomodoro' | 'shortBreak' | 'longBreak'; // El modo actual
+  settings: {
+    pomodoro: number;
+    shortBreak: number;
+    longBreak: number;
+    autoBreak: boolean;
+  };
 
   // Acciones (funciones que modifican el estado)
   setTimeLeft: (time: number) => void;
   setIsActive: (active: boolean) => void;
   setMode: (mode: 'pomodoro' | 'shortBreak' | 'longBreak') => void;
+  setSettings: (settings: { pomodoro: number; shortBreak: number; longBreak: number; autoBreak: boolean }) => void;
   resetTimer: () => void;
 }
 
@@ -19,15 +26,23 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   initialTime: 25 * 60,
   isActive: false,
   mode: 'pomodoro',
+  settings: {
+    pomodoro: 25,
+    shortBreak: 5,
+    longBreak: 15,
+    autoBreak: false,
+  },
 
   setTimeLeft: (time) => set({ timeLeft: time }),
   setIsActive: (active) => set({ isActive: active }),
+  setSettings: (settings) => set({ settings }),
   setMode: (mode) => {
+    const { settings } = get();
     // Cuando cambiamos de modo, reseteamos el tiempo según el modo
     const times = {
-      pomodoro: 25 * 60,
-      shortBreak: 5 * 60,
-      longBreak: 15 * 60,
+      pomodoro: settings.pomodoro * 60,
+      shortBreak: settings.shortBreak * 60,
+      longBreak: settings.longBreak * 60,
     };
     set({ mode, timeLeft: times[mode], initialTime: times[mode], isActive: false });
   },

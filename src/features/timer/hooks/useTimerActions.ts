@@ -3,7 +3,7 @@ import { useTimerStore } from '../../../store/timerStore';
 
 export const useTimer = () => {
   // Traemos las funciones y estados de Zustand
-  const { timeLeft, isActive,mode, setTimeLeft, setIsActive, resetTimer, setMode } = useTimerStore();
+  const { timeLeft, isActive, mode, settings, setTimeLeft, setIsActive, resetTimer, setMode } = useTimerStore();
   
   // useRef se usa para guardar valores que NO provocan re-renderizados visuales
   // Guardamos la hora exacta en que debería terminar el timer
@@ -35,6 +35,15 @@ export const useTimer = () => {
           endTimeRef.current = null; // Limpiamos la referencia
           // AQUÍ PODRÍAMOS DISPARAR UN SONIDO O UNA NOTIFICACIÓN
           clearInterval(interval);
+          
+          // Lógica de descanso automático
+          if (settings.autoBreak && mode === 'pomodoro') {
+            setMode('shortBreak');
+            // Opcional: Auto-iniciar el timer. Añadiendo un pequeño timeout por seguridad.
+            setTimeout(() => {
+              setIsActive(true);
+            }, 0);
+          }
         } else {
           // Actualizamos el estado
           setTimeLeft(secondsLeft);

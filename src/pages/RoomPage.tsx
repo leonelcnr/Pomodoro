@@ -3,8 +3,31 @@ import { useParams } from "react-router-dom";
 import supabase from "../config/supabase";
 import { TimerDisplay } from "../features/timer/components/TimerDisplay";
 import { DataTable } from "@/components/data-table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import mockData from "./data.json";
+import {
+    Empty,
+    EmptyContent,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyMedia,
+    EmptyTitle,
+} from "@/components/ui/empty"
+import { Spinner } from "@/components/ui/spinner"
+import { Button } from "@/components/ui/button"
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Invitacion = { // va en ingles porque asi quedo definido en el supabase
     code: string;
@@ -25,6 +48,7 @@ const RoomPage = () => {
     const [invitacion, setInvitacion] = useState<Invitacion | null>();
     const [cargandoInvitacion, setCargandoInvitacion] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
 
 
     useEffect(() => {
@@ -32,6 +56,7 @@ const RoomPage = () => {
 
         const cargarInvitacion = async () => {
             setCargandoInvitacion(true);
+
 
             const { data, error } = await supabase
                 .from("room_invites")
@@ -66,41 +91,65 @@ const RoomPage = () => {
 
 
     return (
-        <div className="w-full min-h-dvh py-26 px-4 bg-background selection:bg-primary/20">
-            <div className="max-w-6xl mx-auto space-y-24">
+        <div className="w-full min-h-dvh py-24 px-4 bg-background selection:bg-primary/20 overflow-x-hidden">
+            <div className="max-w-6xl mx-auto space-y-24 relative">
+                <div className="absolute -top-16 left-0">
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Salir
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="sm:max-w-[425px]">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>¿Salir de la sala?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Volverás al inicio.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Mantenerse</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => navigate("/")}>
+                                    Salir de la sala
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
                 {cargandoInvitacion ? (
-                    <div className="flex items-center justify-center py-40 text-muted-foreground animate-pulse font-mono tracking-widest uppercase">
-                        Cargando invitación…
-                    </div>
+                    <Empty className="w-full h-full flex flex-col items-center justify-center">
+                        <EmptyHeader>
+                            <EmptyMedia variant="icon">
+                                <Spinner />
+                            </EmptyMedia>
+                            <EmptyTitle>Procesando tu invitación...</EmptyTitle>
+                            <EmptyDescription>
+                                Por favor espera mientras procesamos tu invitación. No recargues la página.
+                            </EmptyDescription>
+                        </EmptyHeader>
+                        <EmptyContent>
+                            <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+                                Cancelar
+                            </Button>
+                        </EmptyContent>
+                    </Empty>
                 ) : linkInvitacion ? (
                     <>
                         <div className="flex items-center justify-center border border-dashed rounded-3xl bg-card/10 w-full h-96">
                             <TimerDisplay link={linkInvitacion} codigo={invitacion?.code || ""} />
                         </div>
 
-                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                            <div className="flex items-center justify-between px-2">
-                                <h2 className="text-3xl font-bold tracking-tight">Tareas</h2>
-                            </div>
-
-                            <Tabs defaultValue="personal" className="w-full">
-                                <div className="flex items-center justify-between mb-6 px-1">
-                                    <TabsList className="bg-muted/50 p-1">
-                                        <TabsTrigger value="personal" className="px-6 py-2 data-[state=active]:bg-background">
-                                            Mis Tareas
-                                        </TabsTrigger>
-                                        <TabsTrigger value="room" className="px-6 py-2 data-[state=active]:bg-background">
-                                            Tareas de la Sala
-                                        </TabsTrigger>
-                                    </TabsList>
+                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 px-2">
+                            <div className="flex flex-col gap-4">
+                                <div className="flex flex-col gap-1 mb-2">
+                                    <h1 className="text-2xl font-bold tracking-tight">Tareas</h1>
+                                    <p className="text-muted-foreground text-sm">
+                                        Aquí tienes una lista de tus tareas.
+                                    </p>
                                 </div>
-                                <TabsContent value="personal" className="mt-0 border-none p-0 outline-none">
-                                    <DataTable data={mockData.slice(0, 5)} />
-                                </TabsContent>
-                                <TabsContent value="room" className="mt-0 border-none p-0 outline-none">
-                                    <DataTable data={mockData.slice(5, 12)} />
-                                </TabsContent>
-                            </Tabs>
+                                <DataTable data={mockData} />
+                            </div>
                         </div>
                     </>
                 ) : (

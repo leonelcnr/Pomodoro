@@ -1,12 +1,18 @@
 import { createContext, useState, useContext, useEffect } from "react";
 import supabase from "../config/supabase";
-import { replace, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 
-const AuthContext = createContext({
+interface AuthContextType {
+    user: any;
+    iniciarSesionConGoogle: () => any;
+    cerrarSesion: () => any;
+}
+
+const AuthContext = createContext<AuthContextType>({
     user: null,
     iniciarSesionConGoogle: () => { },
-    cerrarSesion: () => { }
+    cerrarSesion: () => { },
 });
 
 export const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
@@ -36,10 +42,15 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
         }
     }
 
+    const getUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        return user
+    }
+
 
     useEffect(() => {
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log("supabase session", event)
+            // console.log("supabase session", event)
             if (session == null) {
                 navigate("/login", { replace: true });
             }

@@ -4,6 +4,7 @@
     "header": "Cover page",
     "type": "Cover page",
     "status": "Completada",
+    "priority": "Alta",
     "target": "18",
     "limit": "5",
     "reviewer": "Eddie Lake"

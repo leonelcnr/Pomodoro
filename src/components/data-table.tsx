@@ -19,16 +19,13 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import {
-  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
-  IconCircleCheckFilled,
   IconDotsVertical,
   IconGripVertical,
   IconLayoutColumns,
-  IconLoader,
   IconPlus,
   IconTrendingUp,
 } from "@tabler/icons-react"
@@ -48,8 +45,8 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
-import { toast } from "sonner"
 import { z } from "zod"
+import { Trash2, Edit2, Star, X, ArrowUp, ArrowRight, ArrowDown, CheckCircle2, Timer, CircleDashed } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
@@ -61,6 +58,15 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   Drawer,
   DrawerClose,
@@ -79,6 +85,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { FieldGroup, Field, FieldLabel, FieldContent } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -97,12 +104,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
+
 
 // Esquema de validación para cada tarea usando Zod
 export const schema = z.object({
@@ -111,6 +113,8 @@ export const schema = z.object({
   type: z.string(),      // Tipo de tarea
   status: z.string(),    // Estado: Completada, En Progreso, Sin Empezar
   limit: z.string(),     // Límite o fecha límite
+  favorite: z.boolean().optional(), // Tarea favorita o destacada
+  priority: z.string().optional(),
 })
 
 /**
@@ -141,127 +145,141 @@ function DragHandle({ id }: { id: number }) {
  * Definición de columnas de la tabla
  * Cada columna define cómo se muestra y comporta una parte de los datos de la tarea
  */
-const columns: ColumnDef<z.infer<typeof schema>>[] = [
-  // Columna de arrastre - permite reordenar tareas
-  {
-    id: "drag",
-    header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
-  },
-  // Columna de selección - permite seleccionar múltiples tareas
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Seleccionar todo"
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Seleccionar fila"
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  // Columna de encabezado/título de la tarea
-  {
-    accessorKey: "header",
-    header: "Tarea",
-    cell: ({ row }) => {
-      return <TableCellViewer item={row.original} />
+const getColumns = (
+  onDeleteTask: (id: number) => void,
+  onToggleFavorite: (id: number) => void,
+  onEditTask: (task: z.infer<typeof schema>) => void
+): ColumnDef<z.infer<typeof schema>>[] => [
+    // Columna de arrastre - permite reordenar tareas
+    {
+      id: "drag",
+      header: () => null,
+      cell: ({ row }) => <DragHandle id={row.original.id} />,
     },
-    enableHiding: false,
-  },
-  // Columna de tipo de tarea
-  {
-    accessorKey: "type",
-    header: "Tipo de Tarea",
-    cell: ({ row }) => (
-      <div className="w-32">
-        <Badge variant="outline" className="text-muted-foreground px-1.5">
-          {row.original.type}
+    // Columna de selección - permite seleccionar múltiples tareas
+    {
+      id: "select",
+      header: ({ table }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Seleccionar todo"
+          />
+        </div>
+      ),
+      cell: ({ row }) => (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Seleccionar fila"
+          />
+        </div>
+      ),
+      enableHiding: false,
+    },
+    // Columna de título de la tarea (Badge + Título)
+    {
+      accessorKey: "header",
+      header: "Título",
+      cell: ({ row }) => {
+        return (
+          <div className="flex items-center space-x-2">
+            {row.original.favorite && <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />}
+            <Badge variant="outline" className="text-muted-foreground px-1.5 whitespace-nowrap">
+              {row.original.type}
+            </Badge>
+            <span className="max-w-[500px] truncate font-medium">
+              <TableCellViewer item={row.original} />
+            </span>
+          </div>
+        )
+      },
+      enableHiding: false,
+    },
+    // Columna de estado - muestra si está completada, en progreso o sin empezar
+    {
+      accessorKey: "status",
+      header: "Estado",
+      cell: ({ row }) => (
+        <Badge variant="outline" className="text-muted-foreground px-1.5 flex items-center gap-1.5">
+          {row.original.status === "Completada" ? (
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-500 dark:text-green-400" />
+          ) : row.original.status === "En Progreso" ? (
+            <Timer className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
+          ) : (
+            <CircleDashed className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+          <span>{row.original.status}</span>
         </Badge>
-      </div>
-    ),
-  },
-  // Columna de estado - muestra si está completada, en progreso o sin empezar
-  {
-    accessorKey: "status",
-    header: "Estado",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="text-muted-foreground px-1.5">
-        {row.original.status === "Completada" ? (
-          <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />) : (
-          <IconLoader />
-        )}
-        {row.original.status}
-      </Badge>
-    ),
-  },
-  // Columna de límite/fecha límite
-  {
-    accessorKey: "limit",
-    header: "Límite",
-    cell: ({ row }) => (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-            loading: `Guardando ${row.original.header}`,
-            success: "Guardado",
-            error: "Error",
-          })
-        }}
-      >
-        <Label htmlFor={`${row.original.id}-limit`} className="sr-only">
-          Límite
-        </Label>
-        <Input
-          className="hover:bg-input/30 focus-visible:bg-background dark:hover:bg-input/30 dark:focus-visible:bg-input/30 h-8 w-16 border-transparent bg-transparent text-left shadow-none focus-visible:border dark:bg-transparent"
-          defaultValue={row.original.limit}
-          id={`${row.original.id}-limit`}
-        />
-      </form>
-    ),
-  },
-  // Columna de acciones - menú para editar, copiar o eliminar tareas
-  {
-    id: "actions",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-            size="icon"
-          >
-            <IconDotsVertical />
-            <span className="sr-only">Abrir menú</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem>Editar</DropdownMenuItem>
-          <DropdownMenuItem>Hacer una copia</DropdownMenuItem>
-          <DropdownMenuItem>Favorito</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Eliminar</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
-]
+      ),
+      filterFn: (row, id, value) => {
+        if (!value || value.length === 0) return true
+        return value.includes(row.getValue(id))
+      },
+    },
+    // Columna de Prioridad
+    {
+      accessorKey: "priority",
+      header: "Prioridad",
+      cell: ({ row }) => {
+        const priorityStr = row.original.priority || "Medium"
+        const isHigh = priorityStr === "High" || priorityStr === "Alta"
+        const isMedium = priorityStr === "Medium" || priorityStr === "Media"
+        const label = isHigh ? "Alta" : isMedium ? "Media" : "Baja"
+        return (
+          <div className="flex w-[100px] items-center">
+            <span className="text-muted-foreground mr-2">
+              {isHigh ? <ArrowUp className="h-4 w-4" /> : isMedium ? <ArrowRight className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+            </span>
+            <span>{label}</span>
+          </div>
+        )
+      },
+      filterFn: (row, id, value) => {
+        if (!value || value.length === 0) return true
+        return value.includes(row.getValue(id))
+      },
+    },
+
+    // Columna de acciones - menú para editar, copiar o eliminar tareas
+    {
+      id: "actions",
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="data-[state=open]:bg-muted text-muted-foreground flex h-8 w-8 p-0"
+              size="icon"
+            >
+              <IconDotsVertical className="h-4 w-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[160px]">
+            <DropdownMenuItem onClick={() => onEditTask(row.original)}>
+              <Edit2 className="mr-2 h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onToggleFavorite(row.original.id)}>
+              <Star className={`mr-2 h-4 w-4 ${row.original.favorite ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+              {row.original.favorite ? 'Quitar Favorito' : 'Favorito'}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={() => onDeleteTask(row.original.id)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ]
 
 /**
  * Componente DraggableRow - Fila de tabla arrastrable
@@ -318,7 +336,65 @@ export function DataTable({
     pageSize: 10,
   }) // Configuración de paginación
 
+  // Add Task dialog state
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false)
+  const [newTask, setNewTask] = React.useState<Partial<z.infer<typeof schema>>>({
+    header: "",
+    status: "Sin Empezar",
+    priority: "Medium",
+    type: "",
+  })
+
   const sortableId = React.useId()
+
+  const handleDeleteTask = (id: number) => {
+    setData((prev) => prev.filter((task) => task.id !== id))
+  }
+
+  const handleToggleFavorite = (id: number) => {
+    setData((prev) => prev.map((task) =>
+      task.id === id ? { ...task, favorite: !task.favorite } : task
+    ))
+  }
+
+  const handleEditTask = (task: z.infer<typeof schema>) => {
+    setNewTask(task)
+    setIsDialogOpen(true)
+  }
+
+  const handleAddTask = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (newTask.id) {
+      // Edit existing
+      setData((prev) => prev.map(t => t.id === newTask.id ? { ...t, ...newTask } as z.infer<typeof schema> : t))
+    } else {
+      // Add new
+      const newId = data.length > 0 ? Math.max(...data.map(d => d.id)) + 1 : 1;
+      const newTaskEntry: z.infer<typeof schema> = {
+        id: newId,
+        header: newTask.header || "Nueva Tarea",
+        type: newTask.type || "General",
+        status: newTask.status || "Sin Empezar",
+        limit: "N/A",
+        favorite: newTask.favorite || false,
+        priority: newTask.priority || "Medium",
+      }
+      setData((prev) => [...prev, newTaskEntry])
+    }
+
+    setIsDialogOpen(false) // Close dialog
+    // Reset form
+    setNewTask({
+      header: "",
+      status: "Sin Empezar",
+      priority: "Medium",
+      type: "",
+    })
+  }
+
+  // Derive columns here to pass the delete function
+  const columns = React.useMemo(() => getColumns(handleDeleteTask, handleToggleFavorite, handleEditTask), [])
 
   // Sensores para detectar eventos de mouse, touch y teclado para el arrastre
   const sensors = useSensors(
@@ -359,6 +435,12 @@ export function DataTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
+  const handleDeleteSelected = () => {
+    const selectedIds = table.getFilteredSelectedRowModel().rows.map(r => r.original.id)
+    setData((prev) => prev.filter((task) => !selectedIds.includes(task.id)))
+    table.resetRowSelection()
+  }
+
   /**
    * Función handleDragEnd - Maneja el evento cuando se termina de arrastrar una fila
    * Reordena las tareas en el array de datos
@@ -375,50 +457,132 @@ export function DataTable({
   }
 
   return (
-    <Tabs
-      defaultValue="outline"
-      className="w-full flex-col justify-start gap-6"
-    >
-      <div className="flex items-center justify-between px-4 lg:px-6">
-        <Label htmlFor="view-selector" className="sr-only">
-          Vista
-        </Label>
-        <Select defaultValue="outline">
-          <SelectTrigger
-            className="flex w-fit @4xl/main:hidden"
-            size="sm"
-            id="view-selector"
-          >
-            <SelectValue placeholder="Seleccionar vista" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="outline">Todas las Tareas</SelectItem>
-            <SelectItem value="past-performance">Tareas Completadas</SelectItem>
-            <SelectItem value="key-personnel">Tareas Pendientes</SelectItem>
-            <SelectItem value="focus-documents">Tareas Sin Empezar</SelectItem>
-          </SelectContent>
-        </Select>
-        <TabsList className="**:data-[slot=badge]:bg-muted-foreground/30 hidden **:data-[slot=badge]:size-5 **:data-[slot=badge]:rounded-full **:data-[slot=badge]:px-1 @4xl/main:flex">
-          <TabsTrigger value="outline">Todas las Tareas</TabsTrigger>
-          <TabsTrigger value="past-performance">
-            Completadas <Badge variant="secondary">3</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="key-personnel">
-            Pendientes <Badge variant="secondary">2</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="focus-documents">Sin Empezar</TabsTrigger>
-        </TabsList>
-        <div className="flex items-center gap-2">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-1 flex-wrap items-center gap-2">
+          <Input
+            placeholder="Filtrar tareas..."
+            value={(table.getColumn("header")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("header")?.setFilterValue(event.target.value)
+            }
+            className="h-8 w-[150px] lg:w-[250px]"
+          />
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <IconLayoutColumns />
-                <span className="hidden lg:inline">Personalizar Columnas</span>
-                <span className="lg:hidden">Columnas</span>
-                <IconChevronDown />
+              <Button variant="outline" size="sm" className="h-8 border-dashed">
+                <IconPlus className="mr-2 h-4 w-4" />
+                Estado
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="start" className="w-[150px]">
+              {["Completada", "En Progreso", "Sin Empezar"].map((status) => {
+                const isSelected = (table.getColumn("status")?.getFilterValue() as string[])?.includes(status)
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={status}
+                    checked={isSelected}
+                    onCheckedChange={(checked) => {
+                      const current = (table.getColumn("status")?.getFilterValue() as string[]) || []
+                      const next = checked ? [...current, status] : current.filter((v) => v !== status)
+                      table.getColumn("status")?.setFilterValue(next.length ? next : undefined)
+                    }}
+                  >
+                    <div className="flex items-center">
+                      {status === "Completada" && <CheckCircle2 className="mr-2 h-4 w-4 text-green-500 dark:text-green-400" />}
+                      {status === "En Progreso" && <Timer className="mr-2 h-4 w-4 text-blue-500 dark:text-blue-400" />}
+                      {status === "Sin Empezar" && <CircleDashed className="mr-2 h-4 w-4 text-muted-foreground" />}
+                      <span>{status}</span>
+                    </div>
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+              {((table.getColumn("status")?.getFilterValue() as string[])?.length ?? 0) > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => table.getColumn("status")?.setFilterValue(undefined)} className="justify-center text-center">
+                    Limpiar filtros
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 border-dashed">
+                <IconPlus className="mr-2 h-4 w-4" />
+                Prioridad
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[150px]">
+              {[
+                { value: "High", label: "Alta" },
+                { value: "Medium", label: "Media" },
+                { value: "Low", label: "Baja" }
+              ].map((priority) => {
+                const isSelected = (table.getColumn("priority")?.getFilterValue() as string[])?.includes(priority.value)
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={priority.value}
+                    checked={isSelected}
+                    onCheckedChange={(checked) => {
+                      const current = (table.getColumn("priority")?.getFilterValue() as string[]) || []
+                      const next = checked ? [...current, priority.value] : current.filter((v) => v !== priority.value)
+                      table.getColumn("priority")?.setFilterValue(next.length ? next : undefined)
+                    }}
+                  >
+                    {priority.label}
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+              {((table.getColumn("priority")?.getFilterValue() as string[])?.length ?? 0) > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => table.getColumn("priority")?.setFilterValue(undefined)} className="justify-center text-center">
+                    Limpiar filtros
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {(table.getColumn("header")?.getFilterValue() as string) && (
+            <Button
+              variant="ghost"
+              onClick={() => table.getColumn("header")?.setFilterValue("")}
+              className="h-8 px-2 lg:px-3"
+            >
+              Limpiar
+              <X className="ml-2 h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center space-x-2">
+          {table.getFilteredSelectedRowModel().rows.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-8"
+              onClick={handleDeleteSelected}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Borrar Seleccionados
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-auto hidden h-8 lg:flex"
+              >
+                <IconLayoutColumns className="mr-2 h-4 w-4" />
+                Ver
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[150px]">
               {table
                 .getAllColumns()
                 .filter(
@@ -442,161 +606,224 @@ export function DataTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="outline" size="sm">
-            <IconPlus />
-            <span className="hidden lg:inline">Agregar Tarea</span>
-          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="h-8 bg-purple-500 hover:bg-purple-600 text-white dark:bg-purple-600 dark:hover:bg-purple-700">
+                Agregar Tarea
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Nueva Tarea</DialogTitle>
+                <DialogDescription>
+                  Completa los campos para agregar una nueva tarea a la tabla. Haz clic en guardar cuando termines.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleAddTask}>
+                <FieldGroup className="gap-5 py-4">
+                  <Field>
+                    <FieldLabel>Nombre de la Tarea</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="name"
+                        placeholder="Ej. Actualizar diseño..."
+                        value={newTask.header}
+                        onChange={(e) => setNewTask(prev => ({ ...prev, header: e.target.value }))}
+                        required
+                      />
+                    </FieldContent>
+                  </Field>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field>
+                      <FieldLabel>Estado</FieldLabel>
+                      <FieldContent>
+                        <Select
+                          value={newTask.status}
+                          onValueChange={(val) => setNewTask(prev => ({ ...prev, status: val }))}
+                        >
+                          <SelectTrigger id="status-new-task">
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Completada">Completada</SelectItem>
+                            <SelectItem value="En Progreso">En Progreso</SelectItem>
+                            <SelectItem value="Sin Empezar">Sin Empezar</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FieldContent>
+                    </Field>
+                    <Field>
+                      <FieldLabel>Prioridad</FieldLabel>
+                      <FieldContent>
+                        <Select
+                          value={newTask.priority}
+                          onValueChange={(val) => setNewTask(prev => ({ ...prev, priority: val }))}
+                        >
+                          <SelectTrigger id="priority-new-task">
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="High">Alta</SelectItem>
+                            <SelectItem value="Medium">Media</SelectItem>
+                            <SelectItem value="Low">Baja</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FieldContent>
+                    </Field>
+                  </div>
+
+                  <Field>
+                    <FieldLabel>Tipo</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="type-new-task"
+                        placeholder="Ej. Diseño..."
+                        value={newTask.type}
+                        onChange={(e) => setNewTask((prev) => ({ ...prev, type: e.target.value }))}
+                        required
+                      />
+                    </FieldContent>
+                  </Field>
+                </FieldGroup>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+                  <Button type="submit">Guardar Cambios</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
-      <TabsContent
-        value="outline"
-        className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6"
-      >
-        <div className="overflow-hidden rounded-lg border">
-          <DndContext
-            collisionDetection={closestCenter}
-            modifiers={[restrictToVerticalAxis]}
-            onDragEnd={handleDragEnd}
-            sensors={sensors}
-            id={sortableId}
-          >
-            <Table>
-              <TableHeader className="bg-muted sticky top-0 z-10">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => {
-                      return (
-                        <TableHead key={header.id} colSpan={header.colSpan}>
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                        </TableHead>
-                      )
-                    })}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody className="**:data-[slot=table-cell]:first:w-8">
-                {table.getRowModel().rows?.length ? (
-                  <SortableContext
-                    items={dataIds}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {table.getRowModel().rows.map((row) => (
-                      <DraggableRow key={row.id} row={row} />
-                    ))}
-                  </SortableContext>
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
-                      No hay resultados.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </DndContext>
-        </div>
-        <div className="flex items-center justify-between px-4">
-          <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} de{" "}
-            {table.getFilteredRowModel().rows.length} fila(s) seleccionada(s).
-          </div>
-          <div className="flex w-full items-center gap-8 lg:w-fit">
-            <div className="hidden items-center gap-2 lg:flex">
-              <Label htmlFor="rows-per-page" className="text-sm font-medium">
-                Filas por página
-              </Label>
-              <Select
-                value={`${table.getState().pagination.pageSize}`}
-                onValueChange={(value) => {
-                  table.setPageSize(Number(value))
-                }}
-              >
-                <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                  <SelectValue
-                    placeholder={table.getState().pagination.pageSize}
-                  />
-                </SelectTrigger>
-                <SelectContent side="top">
-                  {[10, 20, 30, 40, 50].map((pageSize) => (
-                    <SelectItem key={pageSize} value={`${pageSize}`}>
-                      {pageSize}
-                    </SelectItem>
+      <div className="overflow-hidden rounded-lg border">
+        <DndContext
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragEnd={handleDragEnd}
+          sensors={sensors}
+          id={sortableId}
+        >
+          <Table>
+            <TableHeader className="sticky top-0 z-10">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id} colSpan={header.colSpan}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                      </TableHead>
+                    )
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody className="**:data-[slot=table-cell]:first:w-8">
+              {table.getRowModel().rows?.length ? (
+                <SortableContext
+                  items={dataIds}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {table.getRowModel().rows.map((row) => (
+                    <DraggableRow key={row.id} row={row} />
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex w-fit items-center justify-center text-sm font-medium">
-              Página {table.getState().pagination.pageIndex + 1} de{" "}
-              {table.getPageCount()}
-            </div>
-            <div className="ml-auto flex items-center gap-2 lg:ml-0">
-              <Button
-                variant="outline"
-                className="hidden h-8 w-8 p-0 lg:flex"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <span className="sr-only">Ir a la primera página</span>
-                <IconChevronsLeft />
-              </Button>
-              <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <span className="sr-only">Ir a la página anterior</span>
-                <IconChevronLeft />
-              </Button>
-              <Button
-                variant="outline"
-                className="size-8"
-                size="icon"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                <span className="sr-only">Ir a la página siguiente</span>
-                <IconChevronRight />
-              </Button>
-              <Button
-                variant="outline"
-                className="hidden size-8 lg:flex"
-                size="icon"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-              >
-                <span className="sr-only">Ir a la última página</span>
-                <IconChevronsRight />
-              </Button>
-            </div>
+                </SortableContext>
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No hay resultados.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </DndContext>
+      </div>
+      <div className="flex items-center justify-between px-4">
+        <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+          {table.getFilteredSelectedRowModel().rows.length} de{" "}
+          {table.getFilteredRowModel().rows.length} fila(s) seleccionada(s).
+        </div>
+        <div className="flex w-full flex-wrap sm:flex-nowrap items-center gap-4 sm:gap-8 lg:w-fit">
+          <div className="hidden items-center gap-2 lg:flex">
+            <Label htmlFor="rows-per-page" className="text-sm font-medium">
+              Filas por página
+            </Label>
+            <Select
+              value={`${table.getState().pagination.pageSize}`}
+              onValueChange={(value) => {
+                table.setPageSize(Number(value))
+              }}
+            >
+              <SelectTrigger size="sm" className="w-20" id="rows-per-page">
+                <SelectValue
+                  placeholder={table.getState().pagination.pageSize}
+                />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[10, 20, 30, 40, 50].map((pageSize) => (
+                  <SelectItem key={pageSize} value={`${pageSize}`}>
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex w-fit items-center justify-center text-sm font-medium">
+            Página {table.getState().pagination.pageIndex + 1} de{" "}
+            {table.getPageCount()}
+          </div>
+          <div className="ml-auto flex items-center gap-2 lg:ml-0">
+            <Button
+              variant="outline"
+              className="hidden h-8 w-8 p-0 lg:flex"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Ir a la primera página</span>
+              <IconChevronsLeft />
+            </Button>
+            <Button
+              variant="outline"
+              className="size-8"
+              size="icon"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              <span className="sr-only">Ir a la página anterior</span>
+              <IconChevronLeft />
+            </Button>
+            <Button
+              variant="outline"
+              className="size-8"
+              size="icon"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Ir a la página siguiente</span>
+              <IconChevronRight />
+            </Button>
+            <Button
+              variant="outline"
+              className="hidden size-8 lg:flex"
+              size="icon"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
+              <span className="sr-only">Ir a la última página</span>
+              <IconChevronsRight />
+            </Button>
           </div>
         </div>
-      </TabsContent>
-      <TabsContent
-        value="past-performance"
-        className="flex flex-col px-4 lg:px-6"
-      >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
-      <TabsContent value="key-personnel" className="flex flex-col px-4 lg:px-6">
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
-      <TabsContent
-        value="focus-documents"
-        className="flex flex-col px-4 lg:px-6"
-      >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
-      </TabsContent>
-    </Tabs>
+      </div>
+    </div >
   )
 }
 

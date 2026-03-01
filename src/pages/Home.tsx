@@ -27,17 +27,23 @@ const Home = () => {
                     <SiteHeader />
                     <div className="flex flex-1 flex-col">
                         <div className="@container/main flex flex-1 flex-col gap-0 ">
-                            <div className="max-w-full h-full flex justify-center flex-col gap-4 py-4 md:gap-6 md:py-6 ">
+                            <div className="max-w-full h-full flex flex-col gap-4 px-4 py-4 md:px-6 md:py-6 lg:px-8">
                                 <div className="w-full">
                                     <SalaNueva />
                                 </div>
 
                                 <Separator
                                     orientation="horizontal"
-                                    className="mx-2 data-[orientation=horizontal]:w-full"
+                                    className="my-4 data-[orientation=horizontal]:w-full"
                                 />
+
                                 <div className="flex flex-col gap-4">
-                                    <h1 className="text-2xl font-bold px-7">Tareas</h1>
+                                    <div className="flex flex-col gap-1 mb-2">
+                                        <h1 className="text-2xl font-bold tracking-tight">Tareas</h1>
+                                        <p className="text-muted-foreground text-sm">
+                                            Aquí tienes una lista de tus tareas.
+                                        </p>
+                                    </div>
                                     <DataTable data={data} />
                                 </div>
                             </div>

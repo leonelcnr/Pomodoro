@@ -4,6 +4,7 @@ import { SlidingNumber } from '@/components/animate-ui/primitives/texts/sliding-
 import DialogShare from './Dialog-Share';
 import DialogSettings from './DialogSettings';
 import { Play, Pause, RotateCcw } from 'lucide-react';
+import { useTimerStore } from '../../../store/timerStore';
 
 function DosDigitos({ value }: { value: number }) {
     const tens = Math.floor(value / 10);
@@ -20,18 +21,19 @@ export interface TimerSettings {
     pomodoro: number;
     shortBreak: number;
     longBreak: number;
+    autoBreak: boolean;
 }
 
 
 export const TimerDisplay = ({ link, codigo }: { link: string, codigo: string }) => {
     const { timeLeft, isActive, toggleTimer, handleReset } = useTimer();
+    const { settings, setSettings } = useTimerStore();
 
     // Cambiamos el título de la pestaña del navegador para ver el tiempo ahí también
     //   document.title = `${formatTime(timeLeft)} - Pomodoro App`;
 
     const handleSaveSettings = (newSettings: TimerSettings) => {
-        console.log('Settings saved:', newSettings);
-        // Aquí puedes guardar los settings en localStorage o en una base de datos
+        setSettings(newSettings);
     };
 
     return (
@@ -50,9 +52,9 @@ export const TimerDisplay = ({ link, codigo }: { link: string, codigo: string })
                 </div>
 
                 {/* El Reloj Minimalista */}
-                <div className={`flex items-baseline gap-2 font-mono text-[${isActive ? '8rem' : '6rem'}] sm:text-[${isActive ? '8rem' : '6rem'}] leading-none font-medium tracking-tighter transition-all duration-500 select-none order-1 sm:order-2  `}>
+                <div className={`flex items-baseline gap-2 font-mono ${isActive ? 'text-[4.5rem] sm:text-[8rem]' : 'text-[4rem] sm:text-[6rem]'} leading-none font-medium tracking-tighter transition-all duration-500 select-none order-1 sm:order-2`}>
                     <DosDigitos value={Math.floor(timeLeft / 60)} />
-                    <span className={`opacity-30 text-[${isActive ? '8rem' : '6rem'}] sm:text-[${isActive ? '8rem' : '6rem'}] transition-all duration-500`}>:</span>
+                    <span className={`opacity-30 ${isActive ? 'text-[4.5rem] sm:text-[8rem]' : 'text-[4rem] sm:text-[6rem]'} transition-all duration-500`}>:</span>
                     <DosDigitos value={timeLeft % 60} />
                 </div>
 
@@ -65,7 +67,7 @@ export const TimerDisplay = ({ link, codigo }: { link: string, codigo: string })
                         className="h-10 w-10 shadow-sm bg-primary hover:bg-primary/90">
                         {isActive ? <Pause className="fill-current w-5 h-5" /> : <Play className="fill-current w-5 h-5 ml-0.5" />}
                     </Button>
-                    <DialogSettings currentSettings={{ pomodoro: 25, shortBreak: 5, longBreak: 15 }} onSaveSettings={handleSaveSettings} />
+                    <DialogSettings currentSettings={settings} onSaveSettings={handleSaveSettings} />
                 </div>
             </div>
         </div >
