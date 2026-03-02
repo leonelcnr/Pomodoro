@@ -112,52 +112,53 @@ export const TimerDisplay = ({ link, codigo, roomId }: { link: string, codigo: s
                 pipWindow.document.body
             )}
 
-            {!pipWindow ? (
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 py-8">
-                    {/* Controles Izquierda: Compartir, Música, Reset */}
-                    <div className="flex items-center gap-3 order-2 sm:order-1">
-                        <DialogShare link={link} codigo={codigo} />
-                        <MusicPlayer roomId={roomId} />
+            {/* Keep the timer UI mounted but hidden when in PiP mode to prevent unmounting the MusicPlayer iframe */}
+            <div className={`${pipWindow ? 'hidden' : 'flex'} flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 py-8`}>
+                {/* Controles Izquierda: Compartir, Música, Reset */}
+                <div className="flex items-center gap-3 order-2 sm:order-1">
+                    <DialogShare link={link} codigo={codigo} />
+                    <MusicPlayer roomId={roomId} />
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleResetTimer}
+                        className="h-10 w-10 hover:bg-accent transition-all shadow-sm">
+                        <RotateCcw className="w-5 h-5" />
+                    </Button>
+                </div>
+
+                {/* El Reloj Minimalista */}
+                <div className={`flex items-baseline gap-2 font-mono ${isActive ? 'text-[5rem] sm:text-[9.5rem]' : 'text-[4.5rem] sm:text-[8rem]'} leading-none font-medium tracking-tighter transition-all duration-500 select-none order-1 sm:order-2`}>
+                    <DosDigitos value={Math.floor(timeLeft / 60)} />
+                    <span className={`opacity-20 ${isActive ? 'text-[5rem] sm:text-[9.5rem]' : 'text-[4.5rem] sm:text-[8rem]'} transition-all duration-500`}>:</span>
+                    <DosDigitos value={timeLeft % 60} />
+                </div>
+
+                {/* Controles Derecha: Play/Pausa, PiP, Settings */}
+                <div className="flex items-center gap-3 order-3">
+                    <Button
+                        onClick={handleToggleTimer}
+                        size="icon"
+                        variant={isActive ? "outline" : "default"}
+                        className={`h-10 w-10 shadow-sm transition-all duration-200 ${!isActive && 'bg-primary hover:bg-primary/90'}`}>
+                        {isActive ? <Pause className="fill-current w-5 h-5" /> : <Play className="fill-current w-5 h-5 ml-1" />}
+                    </Button>
+                    {isSupported && (
                         <Button
                             variant="outline"
                             size="icon"
-                            onClick={handleResetTimer}
-                            className="h-10 w-10 hover:bg-accent transition-all shadow-sm">
-                            <RotateCcw className="w-5 h-5" />
+                            onClick={togglePiP}
+                            className="h-10 w-10 text-muted-foreground hover:text-foreground transition-all shadow-sm"
+                            title="Abrir en ventana flotante"
+                        >
+                            <PictureInPicture2 className="w-5 h-5" />
                         </Button>
-                    </div>
-
-                    {/* El Reloj Minimalista */}
-                    <div className={`flex items-baseline gap-2 font-mono ${isActive ? 'text-[5rem] sm:text-[9.5rem]' : 'text-[4.5rem] sm:text-[8rem]'} leading-none font-medium tracking-tighter transition-all duration-500 select-none order-1 sm:order-2`}>
-                        <DosDigitos value={Math.floor(timeLeft / 60)} />
-                        <span className={`opacity-20 ${isActive ? 'text-[5rem] sm:text-[9.5rem]' : 'text-[4.5rem] sm:text-[8rem]'} transition-all duration-500`}>:</span>
-                        <DosDigitos value={timeLeft % 60} />
-                    </div>
-
-                    {/* Controles Derecha: Play/Pausa, PiP, Settings */}
-                    <div className="flex items-center gap-3 order-3">
-                        <Button
-                            onClick={handleToggleTimer}
-                            size="icon"
-                            variant={isActive ? "outline" : "default"}
-                            className={`h-10 w-10 shadow-sm transition-all duration-200 ${!isActive && 'bg-primary hover:bg-primary/90'}`}>
-                            {isActive ? <Pause className="fill-current w-5 h-5" /> : <Play className="fill-current w-5 h-5 ml-1" />}
-                        </Button>
-                        {isSupported && (
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={togglePiP}
-                                className="h-10 w-10 text-muted-foreground hover:text-foreground transition-all shadow-sm"
-                                title="Abrir en ventana flotante"
-                            >
-                                <PictureInPicture2 className="w-5 h-5" />
-                            </Button>
-                        )}
-                        <DialogSettings currentSettings={settings} onSaveSettings={handleSaveSettings} />
-                    </div>
+                    )}
+                    <DialogSettings currentSettings={settings} onSaveSettings={handleSaveSettings} />
                 </div>
-            ) : (
+            </div>
+
+            {pipWindow && (
                 <div className="flex flex-col items-center gap-6 animate-in fade-in duration-500">
                     <div className="flex flex-col items-center gap-2">
                         <PictureInPicture2 className="w-12 h-12 text-muted-foreground opacity-50 mb-2" />
