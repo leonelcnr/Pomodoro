@@ -6,12 +6,16 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 interface AuthContextType {
     user: any;
     iniciarSesionConGoogle: () => any;
+    iniciarSesionConGithub: () => any;
+    iniciarSesionConDiscord: () => any;
     cerrarSesion: () => any;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     iniciarSesionConGoogle: () => { },
+    iniciarSesionConGithub: () => { },
+    iniciarSesionConDiscord: () => { },
     cerrarSesion: () => { },
 });
 
@@ -35,6 +39,36 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
         }
     }
 
+    const iniciarSesionConGithub = async () => {
+        try {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'github',
+                options: {
+                    redirectTo: `${window.location.origin}/`,
+                }
+            })
+            if (error) throw error
+            return data;
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    const iniciarSesionConDiscord = async () => {
+        try {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'discord',
+                options: {
+                    redirectTo: `${window.location.origin}/`,
+                }
+            })
+            if (error) throw error
+            return data;
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
     const cerrarSesion = async () => {
         try {
             const { error } = await supabase.auth.signOut()
@@ -43,11 +77,6 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
         } catch (error) {
             console.log(error)
         }
-    }
-
-    const getUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        return user
     }
 
 
@@ -80,7 +109,7 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
 
     return (
-        <AuthContext.Provider value={{ user, iniciarSesionConGoogle, cerrarSesion }}>
+        <AuthContext.Provider value={{ user, iniciarSesionConGoogle, iniciarSesionConGithub, iniciarSesionConDiscord, cerrarSesion }}>
             {children}
         </AuthContext.Provider>
     );
