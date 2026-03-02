@@ -36,7 +36,12 @@ export const useTimer = () => {
           setTimeLeft(0);
           setIsActive(false);
           endTimeRef.current = null; // Limpiamos la referencia
+          
           // AQUÍ PODRÍAMOS DISPARAR UN SONIDO O UNA NOTIFICACIÓN
+          const alarmAudio = new Audio('/src/assets/sounds/alarm.mp3');
+          alarmAudio.volume = 0.5;
+          alarmAudio.play().catch(e => console.error("Audio play failed:", e));
+
           clearInterval(interval);
           
           // Guardar sesión de estudio si estábamos en pomodoro
@@ -49,15 +54,27 @@ export const useTimer = () => {
             });
           }
 
-          // Lógica de descanso automático
-          if (settings.autoBreak && mode === 'pomodoro') {
+          // Lógica de transición al finalizar la sesión actual
+          if (mode === 'pomodoro') {
             setMode('shortBreak');
-            // Opcional: Auto-iniciar el timer. Añadiendo un pequeño timeout por seguridad.
-            setTimeout(() => {
-              setIsActive(true);
-            }, 0);
+            if (settings.autoBreak) {
+              setTimeout(() => setIsActive(true), 0);
+            }
+          } else {
+            // Si estábamos en break, volvemos a pomodoro
+            setMode('pomodoro');
+            if (settings.autoBreak) {
+              setTimeout(() => setIsActive(true), 0);
+            }
           }
         } else {
+          // Play tick sounds only at 10 and 5 seconds left
+          if ([10, 5].includes(secondsLeft) && secondsLeft !== timeLeft) {
+            const tickAudio = new Audio('/src/assets/sounds/tick.mp3');
+            tickAudio.volume = 0.4;
+            tickAudio.play().catch(e => console.error("Audio tick failed:", e));
+          }
+
           // Actualizamos el estado
           setTimeLeft(secondsLeft);
         }
