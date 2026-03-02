@@ -93,7 +93,7 @@ export const useTimer = () => {
   const toggleTimer = () => setIsActive(!isActive);
   
   const handleReset = () => {
-    resetTimer();
+    setMode('pomodoro');
     endTimeRef.current = null;
   };
 
