@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import supabase from "../config/supabase";
 import { TimerDisplay } from "../features/timer/components/TimerDisplay";
@@ -62,6 +62,32 @@ const RoomPage = () => {
     // Tareas
     const [tareas, setTareas] = useState<any[]>([]);
     const [taskTab, setTaskTab] = useState<"personal" | "room">("personal");
+    const [unseenCount, setUnseenCount] = useState(0);
+    const prevRoomCount = useRef<number | null>(null);
+    const tasksLoaded = useRef(false);
+
+    useEffect(() => {
+        if (!tasksLoaded.current) return;
+
+        const currentRoomCount = tareas.filter(t => t.room_id === roomId).length;
+
+        if (prevRoomCount.current === null) {
+            prevRoomCount.current = currentRoomCount;
+            return;
+        }
+
+        if (taskTab === "room") {
+            setUnseenCount(0);
+            prevRoomCount.current = currentRoomCount;
+        } else if (currentRoomCount !== prevRoomCount.current) {
+            // Count increased (other user added a task or dragged a task over)
+            if (currentRoomCount > prevRoomCount.current) {
+                const newTasksCount = currentRoomCount - prevRoomCount.current;
+                setUnseenCount(prev => prev + newTasksCount);
+            }
+            prevRoomCount.current = currentRoomCount;
+        }
+    }, [tareas, taskTab, roomId]);
 
     useEffect(() => {
         if (!roomId || !usuario) return;
@@ -149,7 +175,10 @@ const RoomPage = () => {
                 .order("order_index", { ascending: true, nullsFirst: false })
                 .order("created_at", { ascending: false });
 
-            if (!error && data) setTareas(data);
+            if (!error && data) {
+                tasksLoaded.current = true;
+                setTareas(data);
+            }
         };
 
         cargarTareas();
@@ -165,7 +194,11 @@ const RoomPage = () => {
                     table: "tasks",
                     filter: `room_id=eq.${roomId}`,
                 },
-                () => { cargarTareas(); }
+                (payload) => {
+                    // Ignore strictly order_index updates during drag/drop if it was initiated by us
+                    // We re-fetch to keep consistency, but we could optimize this further
+                    cargarTareas();
+                }
             )
             .on(
                 "postgres_changes",
@@ -175,7 +208,9 @@ const RoomPage = () => {
                     table: "tasks",
                     filter: `user_id=eq.${usuario.id}`,
                 },
-                () => { cargarTareas(); }
+                (payload) => {
+                    cargarTareas();
+                }
             )
             .subscribe();
 
@@ -236,10 +271,10 @@ const RoomPage = () => {
         }
 
         // Tareas añadidas o actualizadas
-        for (const t of newTasksState) {
+        // Optimization: Use Supabase upsert to handle massive drag/drop array updates smoothly
+        const tasksToUpsert = newTasksState.map((t) => {
             const esPersonal = taskTab === "personal";
-
-            const taskData: any = {
+            const newTaskData = {
                 user_id: usuario?.id,
                 room_id: (t.room_id) ? t.room_id : (esPersonal ? null : roomId),
                 header: t.header,
@@ -251,20 +286,24 @@ const RoomPage = () => {
             };
 
             if (t.id && t.id < 1000000) {
-                // Actualizar tarea existente
-                const { error } = await supabase.from("tasks").update(taskData).eq("id", t.id);
-                if (error) {
-                    console.error("Supabase update error:", error);
-                    alert(`Error al actualizar la tarea: ${error.message} (Detalles: ${error.details})`);
-                }
-            } else {
-                // Insertar tarea nueva sin forzar ID manual, dejando a Supabase el control autoincremental
-                const { error } = await supabase.from("tasks").insert([taskData]);
-                if (error) {
-                    console.error("Supabase insert error:", error);
-                    alert(`Error al crear la tarea: ${error.message} (Detalles: ${error.details})`);
-                }
+                return { id: t.id, ...newTaskData };
             }
+
+            return newTaskData;
+        });
+
+        // We only do this efficiently in one go for existing tasks to avoid latency issues in the UI
+        const existingTasksToUpdate = tasksToUpsert.filter(t => 'id' in t);
+        const newTasksToInsert = tasksToUpsert.filter(t => !('id' in t));
+
+        if (existingTasksToUpdate.length > 0) {
+            const { error } = await supabase.from("tasks").upsert(existingTasksToUpdate);
+            if (error) console.error("Supabase upsert error:", error);
+        }
+
+        if (newTasksToInsert.length > 0) {
+            const { error } = await supabase.from("tasks").insert(newTasksToInsert);
+            if (error) console.error("Supabase insert error:", error);
         }
     };
 
@@ -377,10 +416,15 @@ const RoomPage = () => {
                                         Mis Tareas
                                     </button>
                                     <button
-                                        className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${taskTab === 'room' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+                                        className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${taskTab === 'room' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
                                         onClick={() => setTaskTab("room")}
                                     >
                                         Tareas de la Sala
+                                        {unseenCount > 0 && (
+                                            <span className="flex h-5 min-w-5 px-1 items-center justify-center rounded-full bg-violet-500 text-[10px] font-bold text-white shadow-sm transition-all dark:bg-violet-600">
+                                                {unseenCount}
+                                            </span>
+                                        )}
                                     </button>
                                 </div>
                                 <DataTable

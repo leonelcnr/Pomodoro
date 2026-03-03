@@ -413,10 +413,22 @@ export function DataTable({
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (over && active.id !== over.id) {
-      const oldIndex = data.findIndex((item) => item.id.toString() === active.id)
-      const newIndex = data.findIndex((item) => item.id.toString() === over.id)
+      let currentData = [...data];
 
-      const reordered = arrayMove(data, oldIndex, newIndex)
+      if (sorting.length > 0) {
+        // Use the current sorted visual order as the base for the new manual order
+        const sortedRows = table.getSortedRowModel().rows.map(r => r.original);
+        const sortedIds = new Set(sortedRows.map(r => r.id));
+        const unsortedRows = currentData.filter(r => !sortedIds.has(r.id));
+
+        currentData = [...sortedRows, ...unsortedRows];
+        setSorting([]); // Clear sorting mode since user took manual control
+      }
+
+      const oldIndex = currentData.findIndex((item) => item.id.toString() === active.id)
+      const newIndex = currentData.findIndex((item) => item.id.toString() === over.id)
+
+      const reordered = arrayMove(currentData, oldIndex, newIndex)
       const updated = reordered.map((item, idx) => ({ ...item, order_index: idx }))
       setData(updated)
 
