@@ -1,15 +1,17 @@
 import { LoginForm } from "@/components/login-form"
-import { Clock } from "lucide-react"
+import { IconInnerShadowTop } from "@tabler/icons-react"
 
 const Login = () => {
 	return (
 		<div className="flex min-h-svh flex-col items-center justify-center gap-6 p-0 md:p-10">
 			<div className="flex w-full max-w-sm flex-col gap-6">
-				<a href="#" className="flex items-center gap-2 self-center font-medium text-lg">
-					<div className="flex size-6 items-center justify-center rounded-md text-primary">
-						<Clock className="size-5" />
+				<a href="#" className="flex items-center gap-2 self-center">
+					<div className="flex aspect-square size-8 items-center justify-center rounded-lg text-primary">
+						<IconInnerShadowTop className="size-5" />
 					</div>
-					Doro
+					<div className="flex flex-col gap-0.5 leading-none">
+						<span className="font-semibold text-lg">Doro</span>
+					</div>
 				</a>
 				<LoginForm />
 			</div>

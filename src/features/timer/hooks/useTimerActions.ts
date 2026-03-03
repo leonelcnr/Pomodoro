@@ -3,6 +3,17 @@ import { useTimerStore } from '../../../store/timerStore';
 import supabase from '@/config/supabase';
 import { UserAuth } from '@/services/AuthContexto';
 
+// Import assets so Vite handles them correctly
+import tickSoundPath from '@/assets/sounds/tick.mp3';
+import alarmSoundPath from '@/assets/sounds/alarm.mp3';
+
+// Create global Audio instances so they get loaded and unlocked by user interaction
+const alarmAudio = new Audio(alarmSoundPath);
+alarmAudio.volume = 0.5;
+
+const tickAudio = new Audio(tickSoundPath);
+tickAudio.volume = 0.4;
+
 export const useTimer = () => {
   const { user } = UserAuth();
   // Traemos las funciones y estados de Zustand
@@ -37,9 +48,8 @@ export const useTimer = () => {
           setIsActive(false);
           endTimeRef.current = null; // Limpiamos la referencia
           
-          // AQUÍ PODRÍAMOS DISPARAR UN SONIDO O UNA NOTIFICACIÓN
-          const alarmAudio = new Audio('/src/assets/sounds/alarm.mp3');
-          alarmAudio.volume = 0.5;
+          // AQUÍ DISPARAMOS UN SONIDO
+          alarmAudio.currentTime = 0;
           alarmAudio.play().catch(e => console.error("Audio play failed:", e));
 
           clearInterval(interval);
@@ -68,15 +78,26 @@ export const useTimer = () => {
             }
           }
         } else {
-          // Play tick sounds only at 10 and 5 seconds left
-          if ([10, 5].includes(secondsLeft) && secondsLeft !== timeLeft) {
-            const tickAudio = new Audio('/src/assets/sounds/tick.mp3');
-            tickAudio.volume = 0.4;
-            tickAudio.play().catch(e => console.error("Audio tick failed:", e));
+          // Play tick sounds catching possible jumps (throttled interval in background tabs)
+          const crossed10 = timeLeft > 10 && secondsLeft <= 10;
+          const crossed5 = timeLeft > 5 && secondsLeft <= 5;
+          const crossed3 = timeLeft > 3 && secondsLeft <= 3;
+          const crossed2 = timeLeft > 2 && secondsLeft <= 2;
+          const crossed1 = timeLeft > 1 && secondsLeft <= 1;
+
+          // Checking if we exactly hit or jumped over 10 or 5 seconds
+          if (crossed10 || crossed5 || crossed3 || crossed2 || crossed1) {
+             // Only play the tick sound for 10 and 5 
+             if ((crossed10 && secondsLeft > 5) || crossed5) {
+                tickAudio.currentTime = 0;
+                tickAudio.play().catch(e => console.error("Audio tick failed:", e));
+             }
           }
 
           // Actualizamos el estado
-          setTimeLeft(secondsLeft);
+          if (secondsLeft !== timeLeft) {
+             setTimeLeft(secondsLeft);
+          }
         }
       }, 200); // Checkeamos cada 200ms para mayor fluidez visual, aunque el cálculo es exacto
     } else {

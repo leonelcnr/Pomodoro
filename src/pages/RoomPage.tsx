@@ -146,6 +146,7 @@ const RoomPage = () => {
                 .from("tasks")
                 .select("*")
                 .or(`room_id.eq.${roomId},and(room_id.is.null,user_id.eq.${usuario.id})`)
+                .order("order_index", { ascending: true, nullsFirst: false })
                 .order("created_at", { ascending: false });
 
             if (!error && data) setTareas(data);
@@ -246,6 +247,7 @@ const RoomPage = () => {
                 status: t.status,
                 priority: t.priority,
                 favorite: t.favorite,
+                order_index: t.order_index,
             };
 
             if (t.id && t.id < 1000000) {

@@ -27,6 +27,7 @@ const Home = () => {
                 .select("*")
                 .eq("user_id", usuario.id)
                 .is("room_id", null)
+                .order("order_index", { ascending: true, nullsFirst: false })
                 .order("created_at", { ascending: false });
 
             if (!error && data) setTareas(data);
@@ -73,6 +74,7 @@ const Home = () => {
                 status: t.status,
                 priority: t.priority,
                 favorite: t.favorite,
+                order_index: t.order_index,
             };
 
             if (t.id && t.id < 1000000) {

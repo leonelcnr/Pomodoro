@@ -27,7 +27,25 @@ import {
 } from "@tanstack/react-table"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { z } from "zod"
-import { Trash2, Edit2, Star, X, ArrowUp, ArrowRight, ArrowDown, CheckCircle2, Timer, CircleDashed, ChevronsUpDown, EyeOff } from "lucide-react"
+import { Trash2, Edit2, Star, X, ArrowUp, ArrowRight, ArrowDown, CheckCircle2, Timer, CircleDashed, ChevronsUpDown, EyeOff, GripVertical } from "lucide-react"
+
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
@@ -97,7 +115,8 @@ export const schema = z.object({
   favorite: z.boolean().optional(), // Tarea favorita o destacada
   priority: z.string().optional(),
   room_id: z.string().nullable().optional(), // Null si es personal, con ID si es de sala
-  user_id: z.string().optional() // ID del dueño
+  user_id: z.string().optional(), // ID del dueño
+  order_index: z.number().nullable().optional() // Índice para ordenamiento
 })
 
 
@@ -164,6 +183,12 @@ const getColumns = (
   onEditTask: (task: z.infer<typeof schema>) => void,
   onMoveTask?: (id: number) => void // Nueva acción opcional
 ): ColumnDef<z.infer<typeof schema>>[] => [
+    {
+      id: "dragHandle",
+      header: "",
+      cell: () => null, // Placeholder since we render Grip in SortableRow directly
+      enableHiding: false,
+    },
     // Columna de selección - permite seleccionar múltiples tareas
     {
       id: "select",
@@ -302,6 +327,42 @@ const getColumns = (
   ]
 
 
+// Componente de fila arrastrable
+const SortableRow = ({ row, isSelected }: { row: Row<z.infer<typeof schema>>; isSelected: boolean }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: row.original.id.toString() })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    ...(isDragging ? { zIndex: 10, position: "relative" as any, backgroundColor: "var(--accent)" } : {}),
+  }
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      data-state={isSelected && "selected"}
+      className={`transition-all ${row.original.status === "Completada" ? "opacity-60 bg-muted/30" : ""}`}
+    >
+      {row.getVisibleCells().map((cell) => (
+        <TableCell
+          key={cell.id}
+          {...(cell.column.id === 'dragHandle' ? { ...attributes, ...listeners, className: "cursor-grab active:cursor-grabbing w-8 px-2 flex items-center justify-center h-[52px]" } : {})}
+        >
+          {cell.column.id === 'dragHandle' ? <GripVertical className="h-4 w-4 text-muted-foreground" /> : flexRender(cell.column.columnDef.cell, cell.getContext())}
+        </TableCell>
+      ))}
+    </TableRow>
+  )
+}
+
 /**
  * Componente principal DataTable - Tabla de gestión de tareas
  * Muestra una tabla interactiva con funcionalidades de ordenamiento, filtrado, paginación y arrastre
@@ -343,6 +404,26 @@ export function DataTable({
     priority: "Medium",
     type: "",
   })
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (over && active.id !== over.id) {
+      const oldIndex = data.findIndex((item) => item.id.toString() === active.id)
+      const newIndex = data.findIndex((item) => item.id.toString() === over.id)
+
+      const reordered = arrayMove(data, oldIndex, newIndex)
+      const updated = reordered.map((item, idx) => ({ ...item, order_index: idx }))
+      setData(updated)
+
+      // We shouldn't block the UI while Supabase updates, so use a timeout
+      setTimeout(() => onTasksChange?.(updated), 0)
+    }
+  }
 
 
   const handleDeleteTask = (id: number) => {
@@ -719,30 +800,24 @@ export function DataTable({
             ))}
           </TableHeader>
           <TableBody className="**:data-[slot=table-cell]:first:w-8">
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className={`transition-all ${row.original.status === "Completada" ? "opacity-60 bg-muted/30" : ""}`}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={table.getRowModel().rows.map(r => r.original.id.toString())} strategy={verticalListSortingStrategy}>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <SortableRow key={row.id} row={row} isSelected={row.getIsSelected()} />
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No hay resultados.
                     </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No hay resultados.
-                </TableCell>
-              </TableRow>
-            )}
+                  </TableRow>
+                )}
+              </SortableContext>
+            </DndContext>
           </TableBody>
         </Table>
       </div>

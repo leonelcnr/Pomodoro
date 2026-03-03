@@ -1,39 +1,65 @@
 import { useEffect, useState } from "react"
-import { Flame } from "lucide-react"
+import { Flame, Clock, CheckCircle2, TrendingUp } from "lucide-react"
 import supabase from "@/config/supabase"
 import { UserAuth } from "@/services/AuthContexto"
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 
 export function DailyStreak() {
     const { user } = UserAuth();
     const [streak, setStreak] = useState(0);
+    const [stats, setStats] = useState({ totalMinutes: 0, completedTasks: 0 });
+    const [studiedToday, setStudiedToday] = useState(false);
 
     useEffect(() => {
         if (!user) return;
 
-        const loadStreak = async () => {
+        const loadData = async () => {
             const { data, error } = await supabase
                 .from("user_stats")
-                .select("current_streak")
+                .select("current_streak, total_study_minutes")
                 .eq("user_id", user.id)
                 .single();
 
             if (!error && data) {
                 setStreak(data.current_streak || 0);
+                setStats(prev => ({ ...prev, totalMinutes: data.total_study_minutes || 0 }));
             }
+
+            const { count: tasksCount } = await supabase
+                .from('tasks')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .eq('status', 'Completada');
+            setStats(prev => ({ ...prev, completedTasks: tasksCount || 0 }));
+
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+            const { data: todaySessions } = await supabase
+                .from('study_sessions')
+                .select('id')
+                .eq('user_id', user.id)
+                .gte('created_at', startOfToday.toISOString())
+                .limit(1);
+            setStudiedToday(todaySessions && todaySessions.length > 0 ? true : false);
         };
 
-        loadStreak();
+        loadData();
 
-        // Escuchar cambios en tiempo real en la racha
         const channel = supabase
-            .channel('realtime-streaks')
+            .channel('realtime-streaks-popover')
             .on(
                 'postgres_changes',
                 { event: 'UPDATE', schema: 'public', table: 'user_stats', filter: `user_id=eq.${user.id}` },
                 (payload) => {
                     setStreak(payload.new.current_streak);
+                    setStats(prev => ({ ...prev, totalMinutes: payload.new.total_study_minutes || 0 }));
                 }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'study_sessions', filter: `user_id=eq.${user.id}` },
+                () => setStudiedToday(true)
             )
             .subscribe();
 
@@ -42,24 +68,77 @@ export function DailyStreak() {
         };
     }, [user]);
 
-    // Ocultar si la racha es 0 para mantener la interfaz limpia hasta que empiece a estudiar
     if (streak === 0) return null;
+
+    const formatMinutes = (m: number) => {
+        if (m < 60) return `${m}m`;
+        return `${Math.floor(m / 60)}h ${m % 60}m`;
+    };
+
+    const isGray = !studiedToday;
+    const buttonColors = isGray
+        ? "bg-zinc-500/10 hover:bg-zinc-500/20 text-zinc-500 border-zinc-500/20 data-[state=open]:bg-zinc-500/20"
+        : "bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 border-orange-500/20 data-[state=open]:bg-orange-500/20";
+    const fireColor = isGray ? "text-zinc-500 fill-current opacity-80" : "fill-current animate-pulse text-orange-500 duration-3000";
 
     return (
         <SidebarMenu className="mt-4">
             <SidebarMenuItem>
-                <SidebarMenuButton
-                    size="lg"
-                    className="bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 border border-orange-500/20 data-[state=open]:bg-orange-500/20"
-                >
-                    <div className="flex aspect-square size-8 items-center justify-center">
-                        <Flame className="size-5 fill-current animate-pulse duration-3000" />
-                    </div>
-                    <div className="flex flex-col gap-0.5 leading-none">
-                        <span className="font-bold">{streak} Días</span>
-                        <span className="text-[10px] font-medium opacity-80 uppercase tracking-wider">De Racha</span>
-                    </div>
-                </SidebarMenuButton>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <SidebarMenuButton
+                            size="lg"
+                            className={`border ${buttonColors}`}
+                        >
+                            <div className="flex aspect-square size-8 items-center justify-center">
+                                <Flame className={`size-5 ${fireColor}`} />
+                            </div>
+                            <div className="flex flex-col gap-0.5 leading-none">
+                                <span className="font-bold">{streak} Días</span>
+                                <span className="text-[10px] font-medium opacity-80 uppercase tracking-wider">De Racha</span>
+                            </div>
+                        </SidebarMenuButton>
+                    </PopoverTrigger>
+                    <PopoverContent side="right" align="start" className="w-64 p-4 mt-2 ml-2 bg-zinc-950/95 backdrop-blur-md border-zinc-800 shadow-xl rounded-xl">
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
+                                <div className={`flex items-center justify-center size-8 rounded-full ${isGray ? 'bg-zinc-500/10' : 'bg-orange-500/10'}`}>
+                                    <Flame className={`size-4 ${isGray ? 'text-zinc-500' : 'text-orange-500'}`} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-semibold text-foreground">Desempeño</span>
+                                    <span className="text-xs text-muted-foreground">Tu progreso continuo</span>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-zinc-400">
+                                        <TrendingUp className="size-4 text-orange-500" />
+                                        <span className="text-sm">Racha Actual</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-foreground">{streak} {streak === 1 ? 'Día' : 'Días'}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-zinc-400">
+                                        <Clock className="size-4 text-violet-500" />
+                                        <span className="text-sm">Enfoque Total</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-foreground">{formatMinutes(stats.totalMinutes)}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-zinc-400">
+                                        <CheckCircle2 className="size-4 text-emerald-500" />
+                                        <span className="text-sm">Tareas Terminadas</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-foreground">{stats.completedTasks}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </PopoverContent>
+                </Popover>
             </SidebarMenuItem>
         </SidebarMenu>
     );
