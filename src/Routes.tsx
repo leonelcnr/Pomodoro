@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import { TimerDisplay } from "./features/timer/components/TimerDisplay";
 import Invitacion from "./pages/InvitacionPage";
 import Room from "./pages/RoomPage";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 
 export const router = createBrowserRouter([
     {
@@ -32,6 +34,8 @@ export const router = createBrowserRouter([
                 ],
             },
             { path: "invitacion/:code", element: <Invitacion /> },
+            { path: "terminos", element: <Terms /> },
+            { path: "privacidad", element: <Privacy /> },
         ],
     },
 ]);

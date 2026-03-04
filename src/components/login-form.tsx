@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Link } from "react-router-dom"
 import { UserAuth } from "../services/AuthContexto"
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
@@ -62,7 +63,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
         </CardContent>
       </Card>
       <div className="text-center text-sm text-muted-foreground px-6 text-balance">
-        Al hacer clic en continuar, aceptas nuestros <a href="#" className="underline underline-offset-4 hover:text-primary">Términos de Servicio</a> y <a href="#" className="underline underline-offset-4 hover:text-primary">Política de Privacidad</a>.
+        Al hacer clic en continuar, aceptas nuestros <Link to="/terminos" className="underline underline-offset-4 hover:text-primary">Términos de Servicio</Link> y <Link to="/privacidad" className="underline underline-offset-4 hover:text-primary">Política de Privacidad</Link>.
       </div>
     </div>
   )
