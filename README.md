@@ -48,7 +48,7 @@ El proyecto está construido usando las tecnologías más modernas del ecosistem
 ## 📸 Capturas de Pantalla
 
 - **Home**:
-  ![Home](./public/home.png)
+  ![Home](./public/Home.png)
 - **Login**:
   ![Login](./public/login.png)
 - **Sala de Estudio**:
@@ -88,4 +88,5 @@ El proyecto está construido usando las tecnologías más modernas del ecosistem
    ```bash
    npm run build
    ```
+
 
