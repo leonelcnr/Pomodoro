@@ -461,16 +461,19 @@ export function DataTable({
     e.preventDefault()
 
     let newData = [...data];
+    const sanitizedHeader = newTask.header?.trim().substring(0, 100) || "Nueva Tarea";
+    const sanitizedType = newTask.type?.trim().substring(0, 50) || "General";
+
     if (newTask.id) {
       // Edit existing
-      newData = data.map(t => t.id === newTask.id ? { ...t, ...newTask } as z.infer<typeof schema> : t);
+      newData = data.map(t => t.id === newTask.id ? { ...t, ...newTask, header: sanitizedHeader, type: sanitizedType } as z.infer<typeof schema> : t);
     } else {
       // Add new: Siempre generamos un ID temporal súper alto para que RoomPage lo detecte como INSERT
       const newId = Date.now() + Math.floor(Math.random() * 1000);
       const newTaskEntry: z.infer<typeof schema> = {
         id: newId,
-        header: newTask.header || "Nueva Tarea",
-        type: newTask.type || "General",
+        header: sanitizedHeader,
+        type: sanitizedType,
         status: newTask.status || "Sin Empezar",
         limit: "N/A",
         favorite: newTask.favorite || false,
@@ -725,6 +728,7 @@ export function DataTable({
                         placeholder="Ej. Actualizar diseño..."
                         value={newTask.header}
                         onChange={(e) => setNewTask(prev => ({ ...prev, header: e.target.value }))}
+                        maxLength={100}
                         required
                       />
                     </FieldContent>
@@ -777,6 +781,7 @@ export function DataTable({
                         placeholder="Ej. Diseño..."
                         value={newTask.type}
                         onChange={(e) => setNewTask((prev) => ({ ...prev, type: e.target.value }))}
+                        maxLength={50}
                         required
                       />
                     </FieldContent>

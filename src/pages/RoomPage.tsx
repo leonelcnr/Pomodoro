@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import supabase from "../config/supabase";
 import { TimerDisplay } from "../features/timer/components/TimerDisplay";
@@ -248,31 +248,22 @@ const RoomPage = () => {
         };
     }, [roomId, usuario]);
 
-    const handleTasksChange = async (newTasksState: any[]) => {
-        // Obtenemos qué tareas se crearon, modificaron o eliminaron comparando con `tareas`
-        // Dado que DataTable maneja mutaciones locales, lo ideal es sincronizarlo.
-        // Para simplicidad en esta demo interactiva de tabla, podríamos hacer un full-sync 
-        // o depender de que DataTable llame funciones específicas (onDelete, onEdit, etc).
-        // En nuestro caso en `data-table.tsx` hicimos un `onTasksChange` genérico que pisa
-        // localmente, pero debemos guardar en BD cada cambio.
-
-        // Por ahora, como DataTable edita el array entero, buscamos las diferencias:
+    const handleTasksChange = useCallback(async (newTasksState: any[]) => {
         const newIds = new Set(newTasksState.map(t => t.id));
 
-        // Determinar qué tareas pertenecen a la pestaña actual
         const currentTabTasks = taskTab === "personal"
             ? tareas.filter(t => t.room_id === null)
             : tareas.filter(t => t.room_id === roomId);
 
-        // Tareas eliminadas: SOLO comparar con las de la pestaña actual
-        const deletedTasks = currentTabTasks.filter(t => !newIds.has(t.id));
-        for (const t of deletedTasks) {
-            await supabase.from("tasks").delete().eq("id", t.id);
+        const deletedIds = currentTabTasks.filter(t => !newIds.has(t.id)).map(t => t.id);
+        if (deletedIds.length > 0) {
+            await supabase.from("tasks").delete().in("id", deletedIds);
         }
 
-        // Tareas añadidas o actualizadas
-        // Optimization: Use Supabase upsert to handle massive drag/drop array updates smoothly
-        const tasksToUpsert = newTasksState.map((t) => {
+        const existingTasksToUpdate: any[] = [];
+        const newTasksToInsert: any[] = [];
+
+        newTasksState.forEach((t) => {
             const esPersonal = taskTab === "personal";
             const newTaskData = {
                 user_id: usuario?.id,
@@ -286,15 +277,11 @@ const RoomPage = () => {
             };
 
             if (t.id && t.id < 1000000) {
-                return { id: t.id, ...newTaskData };
+                existingTasksToUpdate.push({ id: t.id, ...newTaskData });
+            } else {
+                newTasksToInsert.push(newTaskData);
             }
-
-            return newTaskData;
         });
-
-        // We only do this efficiently in one go for existing tasks to avoid latency issues in the UI
-        const existingTasksToUpdate = tasksToUpsert.filter(t => 'id' in t);
-        const newTasksToInsert = tasksToUpsert.filter(t => !('id' in t));
 
         if (existingTasksToUpdate.length > 0) {
             const { error } = await supabase.from("tasks").upsert(existingTasksToUpdate);
@@ -305,15 +292,15 @@ const RoomPage = () => {
             const { error } = await supabase.from("tasks").insert(newTasksToInsert);
             if (error) console.error("Supabase insert error:", error);
         }
-    };
+    }, [taskTab, tareas, roomId, usuario?.id]);
 
-    const handleMoveTask = async (taskId: number) => {
+    const handleMoveTask = useCallback(async (taskId: number) => {
         const task = tareas.find(t => t.id === taskId);
         if (!task) return;
 
         const newRoomId = task.room_id ? null : roomId;
         await supabase.from("tasks").update({ room_id: newRoomId }).eq("id", taskId);
-    };
+    }, [tareas, roomId]);
 
     const tareasMostradas = useMemo(() => {
         if (taskTab === "personal") {
