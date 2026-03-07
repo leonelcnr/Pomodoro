@@ -115,7 +115,7 @@ export default function Dashboard() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col gap-6 p-6 max-w-6xl mx-auto w-full">
+        <div className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8 max-w-6xl mx-auto w-full min-w-0">
 
           {/* Header */}
           <div>
@@ -124,47 +124,47 @@ export default function Dashboard() {
           </div>
 
           {/* Cards resumen */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-zinc-400">Tiempo de Concentración</CardTitle>
-                <Clock className="h-4 w-4 text-violet-500" />
+          <div className="grid gap-4 md:grid-cols-3 w-full min-w-0">
+            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+                <CardTitle className="text-sm font-medium text-zinc-400 line-clamp-1 break-all sm:break-normal">Tiempo de Concentración</CardTitle>
+                <Clock className="h-4 w-4 text-violet-500 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatMinutes(stats.totalMinutes)}</div>
-                <p className="text-xs text-zinc-500 mt-1">Total acumulado</p>
+                <div className="text-2xl font-bold truncate">{formatMinutes(stats.totalMinutes)}</div>
+                <p className="text-xs text-zinc-500 mt-1 truncate">Total acumulado</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-zinc-400">Tareas Terminadas</CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+                <CardTitle className="text-sm font-medium text-zinc-400 line-clamp-1 break-all sm:break-normal">Tareas Terminadas</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.completedTasks}</div>
-                <p className="text-xs text-zinc-500 mt-1">Histórico</p>
+                <div className="text-2xl font-bold truncate">{stats.completedTasks}</div>
+                <p className="text-xs text-zinc-500 mt-1 truncate">Histórico</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-zinc-400">Racha Actual</CardTitle>
-                <TrendingUp className="h-4 w-4 text-orange-500" />
+            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+                <CardTitle className="text-sm font-medium text-zinc-400 line-clamp-1 break-all sm:break-normal">Racha Actual</CardTitle>
+                <TrendingUp className="h-4 w-4 text-orange-500 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.currentStreak} {stats.currentStreak === 1 ? 'Día' : 'Días'}</div>
-                <p className="text-xs text-zinc-500 mt-1">Sigue así</p>
+                <div className="text-2xl font-bold truncate">{stats.currentStreak} {stats.currentStreak === 1 ? 'Día' : 'Días'}</div>
+                <p className="text-xs text-zinc-500 mt-1 truncate">Sigue así</p>
               </CardContent>
             </Card>
 
             {/* Gráfico Principal */}
-            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm col-span-3 md:col-span-2">
+            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm col-span-1 md:col-span-2 overflow-hidden w-full min-w-0">
               <CardHeader>
-                <CardTitle>Flujo de los últimos 7 días</CardTitle>
+                <CardTitle className="truncate">Flujo de los últimos 7 días</CardTitle>
               </CardHeader>
-              <CardContent className="px-2">
-                <div className="h-[300px] w-full">
+              <CardContent className="px-1 sm:px-2 min-w-0 w-full overflow-hidden">
+                <div className="h-[300px] w-full min-w-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
@@ -206,7 +206,7 @@ export default function Dashboard() {
             </Card>
 
             {/* Lista de Tareas Recientes */}
-            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm col-span-3 md:col-span-1">
+            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm col-span-1 md:col-span-1">
               <CardHeader>
                 <CardTitle className="text-sm font-medium text-zinc-300">Últimas Tareas Completadas</CardTitle>
               </CardHeader>

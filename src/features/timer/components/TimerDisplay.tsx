@@ -113,9 +113,9 @@ export const TimerDisplay = ({ link, codigo, roomId }: { link: string, codigo: s
             )}
 
             {/* Keep the timer UI mounted but hidden when in PiP mode to prevent unmounting the MusicPlayer iframe */}
-            <div className={`${pipWindow ? 'hidden' : 'flex'} flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 py-8`}>
+            <div className={`${pipWindow ? 'hidden' : 'flex'} flex-col md:flex-row items-center justify-center gap-6 md:gap-12 lg:gap-16 py-8 w-full`}>
                 {/* Controles Izquierda: Compartir, Música, Reset */}
-                <div className="flex items-center gap-3 order-2 sm:order-1">
+                <div className="flex items-center gap-3 order-2 md:order-1">
                     <DialogShare link={link} codigo={codigo} />
                     <MusicPlayer roomId={roomId} />
                     <Button
@@ -128,9 +128,9 @@ export const TimerDisplay = ({ link, codigo, roomId }: { link: string, codigo: s
                 </div>
 
                 {/* El Reloj Minimalista */}
-                <div className={`flex items-baseline gap-2 font-mono ${isActive ? 'text-[5rem] sm:text-[9.5rem]' : 'text-[4.5rem] sm:text-[8rem]'} leading-none font-medium tracking-tighter transition-all duration-500 select-none order-1 sm:order-2`}>
+                <div className={`flex items-baseline gap-2 font-mono ${isActive ? 'text-[5rem] md:text-[8rem] lg:text-[9.5rem]' : 'text-[4.5rem] md:text-[7rem] lg:text-[8rem]'} leading-none font-medium tracking-tighter transition-all duration-500 select-none order-1 md:order-2`}>
                     <DosDigitos value={Math.floor(timeLeft / 60)} />
-                    <span className={`opacity-20 ${isActive ? 'text-[5rem] sm:text-[9.5rem]' : 'text-[4.5rem] sm:text-[8rem]'} transition-all duration-500`}>:</span>
+                    <span className={`opacity-20 transition-all duration-500`}>:</span>
                     <DosDigitos value={timeLeft % 60} />
                 </div>
 

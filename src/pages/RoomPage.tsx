@@ -312,58 +312,64 @@ const RoomPage = () => {
 
 
     return (
-        <div className="w-full min-h-dvh py-24 px-4 bg-background selection:bg-primary/20 overflow-x-hidden">
-            <div className="max-w-6xl mx-auto space-y-24 relative">
-                <div className="absolute -top-16 left-0">
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Salir
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="sm:max-w-[425px]">
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>¿Salir de la sala?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Volverás al inicio.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Mantenerse</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => navigate("/")}>
-                                    Salir de la sala
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-                {/* Indicador de usuarios en sala */}
-                <div className="absolute -top-16 right-0 flex items-center gap-3 animate-in fade-in duration-700">
-                    <div className="text-sm text-muted-foreground flex flex-col items-end">
-                        <span className="font-medium text-foreground">En sala</span>
-                        <span className="text-xs">{usuariosEnSala.length} {usuariosEnSala.length === 1 ? 'persona' : 'personas'}</span>
+        <div className="w-full min-h-dvh py-6 lg:py-24 px-4 bg-background selection:bg-primary/20 overflow-x-hidden">
+            <div className="max-w-6xl mx-auto space-y-12 lg:space-y-24 relative mt-16 lg:mt-0">
+
+                {/* Cabecera Responsiva (Salir y Usuarios) */}
+                <div className="flex items-center justify-between lg:absolute lg:-top-16 lg:left-0 lg:right-0 mb-8 lg:mb-0 w-full animate-in fade-in duration-700">
+                    <div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    Salir
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="sm:max-w-[425px]">
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Salir de la sala?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Volverás al inicio.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Mantenerse</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => navigate("/")}>
+                                        Salir de la sala
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </div>
-                    <AvatarGroup>
-                        <TooltipProvider delayDuration={100}>
-                            {usuariosEnSala.map((user) => (
-                                <Tooltip key={user.id}>
-                                    <TooltipTrigger asChild>
-                                        <div className="relative cursor-help">
-                                            <Avatar size="sm" className="ring-2 ring-background hover:ring-primary/50 transition-all">
-                                                <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                                <AvatarFallback className="text-xs">{user.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="bottom" className="z-50 text-xs font-medium">
-                                        <p>{user.name}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            ))}
-                        </TooltipProvider>
-                    </AvatarGroup>
+
+                    {/* Indicador de usuarios en sala */}
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="text-sm text-muted-foreground hidden sm:flex flex-col items-end">
+                            <span className="font-medium text-foreground">En sala</span>
+                            <span className="text-xs">{usuariosEnSala.length} {usuariosEnSala.length === 1 ? 'persona' : 'personas'}</span>
+                        </div>
+                        <AvatarGroup>
+                            <TooltipProvider delayDuration={100}>
+                                {usuariosEnSala.map((user) => (
+                                    <Tooltip key={user.id}>
+                                        <TooltipTrigger asChild>
+                                            <div className="relative cursor-help">
+                                                <Avatar size="sm" className="ring-2 ring-background hover:ring-primary/50 transition-all">
+                                                    <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                                    <AvatarFallback className="text-xs">{user.name.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom" className="z-50 text-xs font-medium">
+                                            <p>{user.name}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ))}
+                            </TooltipProvider>
+                        </AvatarGroup>
+                    </div>
                 </div>
+
                 {cargandoInvitacion ? (
                     <Empty className="w-full h-full flex flex-col items-center justify-center">
                         <EmptyHeader>
@@ -383,11 +389,11 @@ const RoomPage = () => {
                     </Empty>
                 ) : (
                     <>
-                        <div className="flex items-center justify-center border border-dashed rounded-3xl bg-card/10 w-full h-96">
+                        <div className="flex items-center justify-center border border-dashed rounded-3xl bg-card/10 w-full min-h-80 lg:h-96 py-8 lg:py-0">
                             <TimerDisplay link={linkInvitacion || ""} codigo={invitacion?.code || ""} roomId={roomId} />
                         </div>
 
-                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 px-2">
+                        <div className="space-y-6 lg:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 px-0 lg:px-2">
                             <div className="flex flex-col gap-4">
                                 <div className="flex flex-col gap-1 mb-2">
                                     <h1 className="text-2xl font-bold tracking-tight">Tareas</h1>

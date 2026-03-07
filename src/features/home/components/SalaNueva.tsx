@@ -56,11 +56,11 @@ export const SalaNueva = () => {
             <div className=" flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-800">
 
                 {/* SECCIÓN IZQUIERDA: CREAR SALA */}
-                <div className="flex-1 py-6 pr-6 md:py-8 flex flex-col justify-start">
+                <div className="flex-1 py-6 md:py-8 md:pr-8 flex flex-col justify-start">
                     <div className="mb-2 flex items-center gap-2">
                         <h2 className="text-xl font-bold tracking-wide">Nueva Sala</h2>
                     </div>
-                    <p className=" text-sm mb-6 grow">
+                    <p className=" text-sm mb-6 grow text-muted-foreground">
                         Crea una sala para iniciar una sesión de Pomodoro y obtén un enlace para compartir con tus amigos.
                     </p>
                     <Button
@@ -71,7 +71,7 @@ export const SalaNueva = () => {
                 </div>
 
                 {/* SECCIÓN DERECHA: UNIRSE A SALA */}
-                <div className="flex-1 p-6 md:p-8 flex flex-col justify-start">
+                <div className="flex-1 py-6 md:py-8 md:pl-8 flex flex-col justify-start">
                     <div className="mb-2 flex items-center gap-2">
                         <h2 className="text-xl font-bold  tracking-wide">Unirse a sala</h2>
                     </div>
