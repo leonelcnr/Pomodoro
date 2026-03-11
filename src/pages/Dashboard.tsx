@@ -5,11 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { Clock, CheckCircle2, TrendingUp } from "lucide-react"
 import { useEffect, useState } from "react"
-import { UserAuth } from "@/services/AuthContexto"
-import supabase from "@/config/supabase"
+import { useAuth } from "@/features/auth/context/AuthContext"
+import supabase from "@/lib/supabase"
 
 export default function Dashboard() {
-  const { user } = UserAuth();
+  const { user } = useAuth();
   const [stats, setStats] = useState({ totalMinutes: 0, completedTasks: 0, currentStreak: 0 });
   const [chartData, setChartData] = useState<{ name: string, minutes: number }[]>([]);
   const [recentTasks, setRecentTasks] = useState<any[]>([]);

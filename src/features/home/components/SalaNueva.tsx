@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { Card } from "@/components/ui/card"; // Ajusta la ruta según tu estructura de Shadcn
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { parsearInvitacion } from "@/features/home/parsearInvitacion"
 import { useNavigate } from 'react-router-dom';
-import supabase from "@/config/supabase"
+import supabase from "@/lib/supabase"
 import { toast } from "sonner"
 
 
@@ -28,16 +27,12 @@ export const SalaNueva = () => {
 
     // UNIRSE A SALA
     const [roomCode, setRoomCode] = useState('');
-    const [loading, setLoading] = useState(false);
 
     const join = async () => {
 
         const code = parsearInvitacion(roomCode);
 
-        setLoading(true);
-        console.log(loading);
         const { data: roomId, error } = await supabase.rpc("join_room", { p_code: code });
-        setLoading(false);
 
         if (error) {
             console.log(error.message);

@@ -26,7 +26,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { ThemeTogglerButton } from "@/components/ui/theme-toggler"
-import { UserAuth } from "@/services/AuthContexto"
+import { useAuth } from "@/features/auth/context/AuthContext"
 import { DailyStreak } from "./daily-streak"
 
 
@@ -132,7 +132,7 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
-  const auth = UserAuth();
+  const auth = useAuth();
   const user = {
     name: auth.user?.name || "Usuario",
     email: auth.user?.email || "",

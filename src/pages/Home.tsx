@@ -9,13 +9,13 @@ import {
 import { Separator } from "@/components/ui/separator"
 import SalaNueva from "../features/home/components/SalaNueva"
 import { useEffect, useState } from "react"
-import supabase from "@/config/supabase"
-import { UserAuth } from "@/services/AuthContexto"
+import supabase from "@/lib/supabase"
+import { useAuth } from "@/features/auth/context/AuthContext"
 
 
 const Home = () => {
-    const authUser = UserAuth();
-    const usuario = authUser.user;
+    const auth = useAuth();
+    const usuario = auth.user;
     const [tareas, setTareas] = useState<any[]>([]);
 
     useEffect(() => {

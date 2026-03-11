@@ -2,10 +2,10 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Link } from "react-router-dom"
-import { UserAuth } from "../services/AuthContexto"
+import { useAuth } from "@/features/auth/context/AuthContext"
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
-  const userAuth = UserAuth();
+  const { signInWithGoogle, signInWithGithub, signInWithDiscord } = useAuth();
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -21,7 +21,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             <Button
               variant="outline"
               className="w-full relative h-11"
-              onClick={userAuth.iniciarSesionConGoogle}
+              onClick={signInWithGoogle}
             >
               <svg className="absolute left-4 size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <path
@@ -35,7 +35,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             <Button
               variant="outline"
               className="w-full relative h-11"
-              onClick={userAuth.iniciarSesionConGithub}
+              onClick={signInWithGithub}
             >
               <svg className="absolute left-4 size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <path
@@ -49,7 +49,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             <Button
               variant="outline"
               className="w-full relative h-11"
-              onClick={userAuth.iniciarSesionConDiscord}
+              onClick={signInWithDiscord}
             >
               <svg className="absolute left-4 size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36">
                 <path

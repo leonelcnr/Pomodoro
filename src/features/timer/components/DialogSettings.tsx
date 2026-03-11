@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -35,17 +35,47 @@ interface NumberInputProps {
 }
 
 const NumberInput: React.FC<NumberInputProps> = ({ id, value, onChange, min = 1 }) => {
+    const [localValue, setLocalValue] = useState(value.toString());
+
+    // Sync local state when external value changes
+    useEffect(() => {
+        setLocalValue(value.toString());
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setLocalValue(val);
+
+        // Update parent immediately if valid so saving works smoothly
+        if (val !== "") {
+            const parsed = parseInt(val, 10);
+            if (!isNaN(parsed)) {
+                onChange(parsed);
+            }
+        }
+    };
+
+    const handleBlur = () => {
+        // Restore to min value or current valid value if input is empty or invalid
+        const parsed = parseInt(localValue, 10);
+        if (localValue === "" || isNaN(parsed) || parsed < min) {
+            setLocalValue(min.toString());
+            onChange(min);
+        } else {
+            setLocalValue(parsed.toString());
+            onChange(parsed);
+        }
+    };
+
     return (
         <div className="flex items-center border border-zinc-700 rounded-md overflow-hidden bg-transparent h-9">
             <input
                 id={id}
                 type="number"
                 min={min}
-                value={value}
-                onChange={(e) => {
-                    const val = parseInt(e.target.value);
-                    if (!isNaN(val)) onChange(val);
-                }}
+                value={localValue}
+                onChange={handleChange}
+                onBlur={handleBlur}
                 className="w-16 bg-transparent text-center text-sm outline-none px-2 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none text-white"
             />
             <div className="flex items-center border-l border-zinc-700">
@@ -53,7 +83,11 @@ const NumberInput: React.FC<NumberInputProps> = ({ id, value, onChange, min = 1 
                     type="button"
                     variant="ghost"
                     className="h-9 w-9 rounded-none hover:bg-zinc-800 p-0 text-zinc-400"
-                    onClick={() => onChange(Math.max(min, value - 1))}
+                    onClick={() => {
+                        const next = Math.max(min, value - 1);
+                        setLocalValue(next.toString());
+                        onChange(next);
+                    }}
                 >
                     <Minus className="h-4 w-4" />
                 </Button>
@@ -62,7 +96,11 @@ const NumberInput: React.FC<NumberInputProps> = ({ id, value, onChange, min = 1 
                     type="button"
                     variant="ghost"
                     className="h-9 w-9 rounded-none hover:bg-zinc-800 p-0 text-zinc-400"
-                    onClick={() => onChange(value + 1)}
+                    onClick={() => {
+                        const next = value + 1;
+                        setLocalValue(next.toString());
+                        onChange(next);
+                    }}
                 >
                     <Plus className="h-4 w-4" />
                 </Button>

@@ -1,30 +1,30 @@
 import { createContext, useState, useContext, useEffect } from "react";
-import supabase from "../config/supabase";
+import supabase from "@/lib/supabase";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 
 interface AuthContextType {
     user: any;
-    iniciarSesionConGoogle: () => any;
-    iniciarSesionConGithub: () => any;
-    iniciarSesionConDiscord: () => any;
-    cerrarSesion: () => any;
+    signInWithGoogle: () => any;
+    signInWithGithub: () => any;
+    signInWithDiscord: () => any;
+    signOut: () => any;
 }
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
-    iniciarSesionConGoogle: () => { },
-    iniciarSesionConGithub: () => { },
-    iniciarSesionConDiscord: () => { },
-    cerrarSesion: () => { },
+    signInWithGoogle: () => { },
+    signInWithGithub: () => { },
+    signInWithDiscord: () => { },
+    signOut: () => { },
 });
 
-export const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<any>(null);
     const navigate = useNavigate();
     const [params] = useSearchParams();
 
-    const iniciarSesionConGoogle = async () => {
+    const signInWithGoogle = async () => {
         try {
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
@@ -35,11 +35,11 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
             if (error) throw error
             return data;
         } catch (error) {
-            console.log(error)
+            console.error(error)
         }
     }
 
-    const iniciarSesionConGithub = async () => {
+    const signInWithGithub = async () => {
         try {
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'github',
@@ -50,11 +50,11 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
             if (error) throw error
             return data;
         } catch (error) {
-            console.log(error)
+            console.error(error)
         }
     }
 
-    const iniciarSesionConDiscord = async () => {
+    const signInWithDiscord = async () => {
         try {
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'discord',
@@ -65,24 +65,23 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
             if (error) throw error
             return data;
         } catch (error) {
-            console.log(error)
+            console.error(error)
         }
     }
 
-    const cerrarSesion = async () => {
+    const signOut = async () => {
         try {
             const { error } = await supabase.auth.signOut()
-            setUser(null) // no se si hace falta esto
+            setUser(null)
             if (error) throw error
         } catch (error) {
-            console.log(error)
+            console.error(error)
         }
     }
 
 
     useEffect(() => {
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-            // console.log("supabase session", event)
             if (session == null) {
                 navigate("/login", { replace: true });
             }
@@ -98,23 +97,22 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
                     const redirect = params.get("redirect");
                     navigate(redirect ? decodeURIComponent(redirect) : "/home", { replace: true });
                 }
-                // navigate("/", { replace: true }) //Esto nos esta haciendo quilombo, proba alt tabear, te
-            }                                       // redirije siempre al home pq chequea todo el tiempo que esta logeado.
+            }
         });
         return () => {
             authListener.subscription.unsubscribe();
         };
-    }, [navigate]);
+    }, [navigate, params]);
 
 
 
     return (
-        <AuthContext.Provider value={{ user, iniciarSesionConGoogle, iniciarSesionConGithub, iniciarSesionConDiscord, cerrarSesion }}>
+        <AuthContext.Provider value={{ user, signInWithGoogle, signInWithGithub, signInWithDiscord, signOut }}>
             {children}
         </AuthContext.Provider>
     );
 };
 
-export const UserAuth = () => {
+export const useAuth = () => {
     return useContext(AuthContext);
 }

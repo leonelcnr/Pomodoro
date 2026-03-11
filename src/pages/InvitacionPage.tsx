@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import supabase from "../config/supabase";
+import supabase from "@/lib/supabase";
 import { Button } from "@/components/ui/button"
 import {
     Empty,
@@ -45,9 +45,8 @@ const Invitacion = () => {
         };
 
         run();
-    }, [code, navigate, location.pathname]);
+    }, [code, navigate]);
 
-    // UI simple (podés reemplazar por Card/Loader de shadcn)
     if (errorMsg) {
         return (
             <Empty className="w-full h-screen flex flex-col items-center justify-center">

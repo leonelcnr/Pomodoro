@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import supabase from "@/config/supabase"
+import supabase from "@/lib/supabase"
 import { parsearInvitacion } from "@/features/home/parsearInvitacion"
 import DialogCargando from "@/features/home/components/DialogCargando"
 
@@ -60,7 +60,7 @@ const DialogUnirse = () => {
     }
     return (
         <Dialog>
-            <DialogTrigger><Button variant="outline" className="w-full h-10">Unirse</Button></DialogTrigger>
+            <DialogTrigger asChild><Button variant="outline" className="w-full h-10">Unirse</Button></DialogTrigger>
             <DialogContent className="flex flex-col gap-6">
                 <DialogHeader>
                     <DialogTitle>Unirse a la sala</DialogTitle>
@@ -71,6 +71,7 @@ const DialogUnirse = () => {
                 <div>
                     <Input placeholder="Código" value={value} onChange={(e) => setValue(e.target.value)}></Input>
                 </div>
+                {errorMsg && <p className="text-destructive text-sm">{errorMsg}</p>}
                 <DialogFooter className="sm:justify-start">
                     <DialogClose asChild>
                         <Button variant="outline">Cancelar</Button>

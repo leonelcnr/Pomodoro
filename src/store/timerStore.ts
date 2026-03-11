@@ -21,6 +21,7 @@ interface TimerState {
   resetTimer: () => void;
   // Para la sincronización (nuevo)
   setTimerState: (state: { timeLeft: number; isActive: boolean; mode: 'pomodoro' | 'shortBreak' | 'longBreak'; updatedAt?: string }) => void;
+  lastLocalUpdate: number;
 }
 
 export const useTimerStore = create<TimerState>((set, get) => ({
@@ -34,9 +35,10 @@ export const useTimerStore = create<TimerState>((set, get) => ({
     longBreak: 15,
     autoBreak: false,
   },
+  lastLocalUpdate: Date.now(),
 
   setTimeLeft: (time) => set({ timeLeft: time }),
-  setIsActive: (active) => set({ isActive: active }),
+  setIsActive: (active) => set({ isActive: active, lastLocalUpdate: Date.now() }),
   setSettings: (settings) => set((state) => {
     const updates: Partial<TimerState> = { settings };
     
@@ -49,7 +51,8 @@ export const useTimerStore = create<TimerState>((set, get) => ({
       updates.timeLeft = times[state.mode];
       updates.initialTime = times[state.mode];
     }
-
+    
+    updates.lastLocalUpdate = Date.now();
     return updates;
   }),
   setMode: (mode) => {
@@ -60,9 +63,9 @@ export const useTimerStore = create<TimerState>((set, get) => ({
       shortBreak: settings.shortBreak * 60,
       longBreak: settings.longBreak * 60,
     };
-    set({ mode, timeLeft: times[mode], initialTime: times[mode], isActive: false });
+    set({ mode, timeLeft: times[mode], initialTime: times[mode], isActive: false, lastLocalUpdate: Date.now() });
   },
-  resetTimer: () => set({ timeLeft: get().initialTime, isActive: false }),
+  resetTimer: () => set({ timeLeft: get().initialTime, isActive: false, lastLocalUpdate: Date.now() }),
   setTimerState: (payload) => set((state) => {
     // Si viene la fecha de actualización y el reloj está activo, calculamos la desviación
     let newTimeLeft = payload.timeLeft;

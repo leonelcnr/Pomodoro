@@ -34,25 +34,11 @@ export interface TimerSettings {
 
 export const TimerDisplay = ({ link, codigo, roomId }: { link: string, codigo: string, roomId?: string }) => {
     const { timeLeft, isActive, mode, toggleTimer, handleReset } = useTimer();
-    const { settings, setSettings } = useTimerStore();
+    const { settings, setSettings, lastLocalUpdate } = useTimerStore();
     const { isSupported, pipWindow, requestPiP, closePiP } = useDocumentPiP();
-
-    // Referencia para saber si el cambio vino del usuario o de la red
-    const isLocalChange = React.useRef(false);
 
     const handleSaveSettings = (newSettings: TimerSettings) => {
         setSettings(newSettings);
-        isLocalChange.current = true;
-    };
-
-    const handleToggleTimer = () => {
-        isLocalChange.current = true;
-        toggleTimer();
-    };
-
-    const handleResetTimer = () => {
-        isLocalChange.current = true;
-        handleReset();
     };
 
     const togglePiP = async () => {
@@ -63,31 +49,30 @@ export const TimerDisplay = ({ link, codigo, roomId }: { link: string, codigo: s
         }
     };
 
-    // Sincronizar hacia Supabase cuando este usuario hace un cambio
+    // Sincronizar hacia Supabase cuando se detecta un cambio de estado local
     React.useEffect(() => {
-        if (!roomId || !isLocalChange.current) return;
+        // Solo sincronizar si hay roomId y el cambio provino de este cliente
+        if (!roomId || !lastLocalUpdate) return;
 
         const syncToSupabase = async () => {
+            const state = useTimerStore.getState();
             const newState = {
-                timeLeft,
-                isActive,
-                mode,
+                timeLeft: state.timeLeft,
+                isActive: state.isActive,
+                mode: state.mode,
                 updatedAt: new Date().toISOString()
             };
 
             // Subir a Supabase
             const { error } = await supabase.from("rooms").update({ timer_state: newState }).eq("id", roomId);
             if (error) {
-                alert(`Error guardando el reloj en Supabase: ${error.message}`);
                 console.error("Timer update error:", error);
             }
-            isLocalChange.current = false;
         };
 
-        // Evitamos spamear la base de datos cada segundo; solo mandamos cuando se pausa, resetea o arranca.
-        // Opcionalmente se podría mandar cada 10 segundos, pero el "updatedAt" ya nos ayuda matemáticamente.
         syncToSupabase();
-    }, [isActive, mode, roomId]); // No incluimos timeLeft aquí intencionalmente para evitar 1 update por segundo
+    }, [lastLocalUpdate, roomId]);
+
 
     // Remove cursor from body when PiP is active, to provide clear feedback
     useEffect(() => {
@@ -106,7 +91,7 @@ export const TimerDisplay = ({ link, codigo, roomId }: { link: string, codigo: s
                 <FloatingTimer
                     timeLeft={timeLeft}
                     isActive={isActive}
-                    onToggle={handleToggleTimer}
+                    onToggle={toggleTimer}
                     onClose={closePiP}
                 />,
                 pipWindow.document.body
@@ -121,23 +106,37 @@ export const TimerDisplay = ({ link, codigo, roomId }: { link: string, codigo: s
                     <Button
                         variant="outline"
                         size="icon"
-                        onClick={handleResetTimer}
+                        onClick={handleReset}
                         className="h-10 w-10 hover:bg-accent transition-all shadow-sm">
                         <RotateCcw className="w-5 h-5" />
                     </Button>
                 </div>
 
-                {/* El Reloj Minimalista */}
-                <div className={`flex items-baseline gap-2 font-mono ${isActive ? 'text-[5rem] md:text-[8rem] lg:text-[9.5rem]' : 'text-[4.5rem] md:text-[7rem] lg:text-[8rem]'} leading-none font-medium tracking-tighter transition-all duration-500 select-none order-1 md:order-2`}>
-                    <DosDigitos value={Math.floor(timeLeft / 60)} />
-                    <span className={`opacity-20 transition-all duration-500`}>:</span>
-                    <DosDigitos value={timeLeft % 60} />
+                {/* Contenedor del Reloj y el Indicador de Modo */}
+                <div className="relative flex flex-col items-center justify-center order-1 md:order-2">
+                    {/* Indicador de Modo Minimalista */}
+                    <div className="absolute -top-2 md:-top-3 flex items-center justify-center gap-2 transition-all duration-300">
+                        <div className={`w-1.5 h-1.5 rounded-full ${mode === 'pomodoro' ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
+                            mode === 'shortBreak' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' :
+                                'bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]'
+                            }`} />
+                        <span className="text-[10px] sm:text-xs font-medium tracking-[0.15em] text-muted-foreground uppercase select-none whitespace-nowrap">
+                            {mode === 'pomodoro' ? 'Pomodoro' : mode === 'shortBreak' ? 'Descanso Corto' : 'Descanso Largo'}
+                        </span>
+                    </div>
+
+                    {/* El Reloj Minimalista */}
+                    <div className={`flex items-baseline gap-2 font-mono ${isActive ? 'text-[5rem] md:text-[8rem] lg:text-[9.5rem]' : 'text-[4.5rem] md:text-[7rem] lg:text-[8rem]'} leading-none font-medium tracking-tighter transition-all duration-500 select-none`}>
+                        <DosDigitos value={Math.floor(timeLeft / 60)} />
+                        <span className={`opacity-20 transition-all duration-500`}>:</span>
+                        <DosDigitos value={timeLeft % 60} />
+                    </div>
                 </div>
 
                 {/* Controles Derecha: Play/Pausa, PiP, Settings */}
                 <div className="flex items-center gap-3 order-3">
                     <Button
-                        onClick={handleToggleTimer}
+                        onClick={toggleTimer}
                         size="icon"
                         variant={isActive ? "outline" : "default"}
                         className={`h-10 w-10 shadow-sm transition-all duration-200 ${!isActive && 'bg-primary hover:bg-primary/90'}`}>

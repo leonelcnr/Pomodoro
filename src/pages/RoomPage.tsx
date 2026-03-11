@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import supabase from "../config/supabase";
-import { TimerDisplay } from "../features/timer/components/TimerDisplay";
-import { useTimerStore } from "../store/timerStore";
+import supabase from "@/lib/supabase";
+import { TimerDisplay } from "@/features/timer/components/TimerDisplay";
+import { useTimerStore } from "@/store/timerStore";
 import { DataTable } from "@/components/data-table";
 import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -29,7 +29,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { UserAuth } from "../services/AuthContexto";
+import { useAuth } from "@/features/auth/context/AuthContext";
 
 type Invitacion = { // va en ingles porque asi quedo definido en el supabase
     code: string;
@@ -52,8 +52,8 @@ const RoomPage = () => {
     const [cargandoInvitacion, setCargandoInvitacion] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
-    const authUser = UserAuth();
-    const usuario = authUser.user;
+    const auth = useAuth();
+    const usuario = auth.user;
     const setTimerState = useTimerStore((state) => state.setTimerState);
 
     // Para manejar los usuarios conectados a la sala
@@ -150,8 +150,6 @@ const RoomPage = () => {
 
             const inv = data?.[0] ?? null;
             setInvitacion(inv && InvitacionValida(inv) ? inv : null);
-            const { data: me } = await supabase.auth.getUser();
-            console.log("mi uid:", me.user?.id);
         };
 
         cargarInvitacion();
@@ -194,9 +192,7 @@ const RoomPage = () => {
                     table: "tasks",
                     filter: `room_id=eq.${roomId}`,
                 },
-                (payload) => {
-                    // Ignore strictly order_index updates during drag/drop if it was initiated by us
-                    // We re-fetch to keep consistency, but we could optimize this further
+                () => {
                     cargarTareas();
                 }
             )
@@ -208,7 +204,7 @@ const RoomPage = () => {
                     table: "tasks",
                     filter: `user_id=eq.${usuario.id}`,
                 },
-                (payload) => {
+                () => {
                     cargarTareas();
                 }
             )

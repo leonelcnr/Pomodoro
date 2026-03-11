@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { useTimerStore } from '../../../store/timerStore';
-import supabase from '@/config/supabase';
-import { UserAuth } from '@/services/AuthContexto';
+import { useTimerStore } from '@/store/timerStore';
+import supabase from '@/lib/supabase';
+import { useAuth } from '@/features/auth/context/AuthContext';
 
 // Import assets so Vite handles them correctly
 import tickSoundPath from '@/assets/sounds/tick.mp3';
@@ -15,16 +15,16 @@ const tickAudio = new Audio(tickSoundPath);
 tickAudio.volume = 0.4;
 
 export const useTimer = () => {
-  const { user } = UserAuth();
+  const { user } = useAuth();
   // Traemos las funciones y estados de Zustand
-  const { timeLeft, isActive, mode, settings, setTimeLeft, setIsActive, resetTimer, setMode } = useTimerStore();
+  const { timeLeft, isActive, mode, settings, setTimeLeft, setIsActive, setMode } = useTimerStore();
   
   // useRef se usa para guardar valores que NO provocan re-renderizados visuales
   // Guardamos la hora exacta en que debería terminar el timer
   const endTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    let interval: number | undefined;
+    let interval: number | any;
 
     if (isActive && timeLeft > 0) {
       // 1. Si acabamos de arrancar (o reanudar), calculamos cuándo debe terminar.
@@ -108,7 +108,7 @@ export const useTimer = () => {
 
     // Cleanup: Si el componente se desmonta, limpiamos el intervalo
     return () => clearInterval(interval);
-  }, [isActive, setTimeLeft, setIsActive, timeLeft, mode, settings.pomodoro, user]); // Dependencias
+  }, [isActive, setTimeLeft, setIsActive, timeLeft, mode, settings.pomodoro, user, setMode, settings.autoBreak]); // Dependencias
 
   // Funciones para que usen los botones
   const toggleTimer = () => setIsActive(!isActive);

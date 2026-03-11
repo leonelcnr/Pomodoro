@@ -1,11 +1,11 @@
 // src/layouts/AuthProviderLayout.tsx
 import { Outlet } from "react-router-dom";
-import { AuthContextProvider } from "../services/AuthContexto";
+import { AuthProvider } from "@/features/auth/context/AuthContext";
 
 export default function AuthProviderLayout() {
     return (
-        <AuthContextProvider>
+        <AuthProvider>
             <Outlet />
-        </AuthContextProvider>
+        </AuthProvider>
     );
 }

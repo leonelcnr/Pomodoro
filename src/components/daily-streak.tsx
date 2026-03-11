@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react"
 import { Flame, Clock, CheckCircle2, TrendingUp } from "lucide-react"
 import supabase from "@/config/supabase"
-import { UserAuth } from "@/services/AuthContexto"
+import { useAuth } from "@/features/auth/context/AuthContext"
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 
 export function DailyStreak() {
-    const { user } = UserAuth();
+    const { user } = useAuth();
     const [streak, setStreak] = useState(0);
     const [stats, setStats] = useState({ totalMinutes: 0, completedTasks: 0 });
     const [studiedToday, setStudiedToday] = useState(false);
