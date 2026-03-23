@@ -141,7 +141,7 @@ function DataTableColumnHeader({
           <Button
             variant="ghost"
             size="sm"
-            className="-ml-3 h-8 data-[state=open]:bg-accent text-xs font-semibold hover:bg-zinc-800/60"
+            className="-ml-3 h-8 data-[state=open]:bg-accent text-xs font-semibold"
           >
             <span>{title}</span>
             {column.getIsSorted() === "desc" ? (
@@ -153,7 +153,7 @@ function DataTableColumnHeader({
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="bg-zinc-950 border-zinc-800">
+        <DropdownMenuContent align="start">
           <DropdownMenuItem className="cursor-pointer" onClick={() => column.toggleSorting(false)}>
             <ArrowUp className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
             Ascendente
@@ -162,7 +162,7 @@ function DataTableColumnHeader({
             <ArrowDown className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
             Descendente
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-zinc-800" />
+          <DropdownMenuSeparator />
           <DropdownMenuItem className="cursor-pointer" onClick={() => column.toggleVisibility(false)}>
             <EyeOff className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
             Ocultar columna
@@ -223,7 +223,7 @@ const getColumns = (
         return (
           <div className="flex items-center space-x-2">
             {row.original.favorite && <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />}
-            <Badge variant="outline" className={`px-2 py-0.5 whitespace-nowrap font-medium text-[11px] text-foreground capitalize border-zinc-700/50 bg-transparent ${row.original.status === 'Completada' ? 'opacity-70' : ''}`}>
+            <Badge variant="outline" className={`px-2 py-0.5 whitespace-nowrap font-medium text-[11px] text-foreground capitalize border-border bg-transparent ${row.original.status === 'Completada' ? 'opacity-70' : ''}`}>
               {row.original.type}
             </Badge>
             <span className={`max-w-[500px] truncate font-medium ${row.original.status === 'Completada' ? 'line-through text-muted-foreground opacity-70' : ''}`}>
@@ -797,28 +797,28 @@ export function DataTable({
         </div>
       </div>
       <div className="overflow-hidden rounded-lg border">
-        <Table>
-          <TableHeader className="sticky top-0 z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                    </TableHead>
-                  )
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody className="**:data-[slot=table-cell]:first:w-8">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={table.getRowModel().rows.map(r => r.original.id.toString())} strategy={verticalListSortingStrategy}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={table.getRowModel().rows.map(r => r.original.id.toString())} strategy={verticalListSortingStrategy}>
+            <Table>
+              <TableHeader className="sticky top-0 z-10">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id} colSpan={header.colSpan}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                        </TableHead>
+                      )
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody className="**:data-[slot=table-cell]:first:w-8">
                 {table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
                     <SortableRow key={row.id} row={row} isSelected={row.getIsSelected()} />
@@ -833,10 +833,10 @@ export function DataTable({
                     </TableCell>
                   </TableRow>
                 )}
-              </SortableContext>
-            </DndContext>
-          </TableBody>
-        </Table>
+              </TableBody>
+            </Table>
+          </SortableContext>
+        </DndContext>
       </div>
       <div className="flex items-center justify-between px-4">
         <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">

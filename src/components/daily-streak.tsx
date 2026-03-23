@@ -15,6 +15,7 @@ export function DailyStreak() {
         if (!user) return;
 
         const loadData = async () => {
+
             const { data, error } = await supabase
                 .from("user_stats")
                 .select("current_streak, total_study_minutes")
@@ -77,9 +78,9 @@ export function DailyStreak() {
 
     const isGray = !studiedToday;
     const buttonColors = isGray
-        ? "bg-zinc-500/10 hover:bg-zinc-500/20 text-zinc-500 border-zinc-500/20 data-[state=open]:bg-zinc-500/20"
+        ? "bg-muted hover:bg-muted/80 text-muted-foreground border-border data-[state=open]:bg-muted/80"
         : "bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 border-orange-500/20 data-[state=open]:bg-orange-500/20";
-    const fireColor = isGray ? "text-zinc-500 fill-current opacity-80" : "fill-current animate-pulse text-orange-500 duration-3000";
+    const fireColor = isGray ? "text-muted-foreground fill-current opacity-80" : "fill-current animate-pulse text-orange-500 duration-3000";
 
     return (
         <SidebarMenu className="mt-4">
@@ -99,11 +100,11 @@ export function DailyStreak() {
                             </div>
                         </SidebarMenuButton>
                     </PopoverTrigger>
-                    <PopoverContent side="right" align="start" className="w-64 p-4 mt-2 ml-2 bg-zinc-950/95 backdrop-blur-md border-zinc-800 shadow-xl rounded-xl">
+                    <PopoverContent side="right" align="start" className="w-64 p-4 mt-2 ml-2 bg-popover/95 backdrop-blur-md border-border shadow-xl rounded-xl">
                         <div className="flex flex-col gap-4">
-                            <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
-                                <div className={`flex items-center justify-center size-8 rounded-full ${isGray ? 'bg-zinc-500/10' : 'bg-orange-500/10'}`}>
-                                    <Flame className={`size-4 ${isGray ? 'text-zinc-500' : 'text-orange-500'}`} />
+                            <div className="flex items-center gap-2 border-b border-border pb-3">
+                                <div className={`flex items-center justify-center size-8 rounded-full ${isGray ? 'bg-muted' : 'bg-orange-500/10'}`}>
+                                    <Flame className={`size-4 ${isGray ? 'text-muted-foreground' : 'text-orange-500'}`} />
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-sm font-semibold text-foreground">Desempeño</span>
@@ -113,7 +114,7 @@ export function DailyStreak() {
 
                             <div className="grid gap-3">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-zinc-400">
+                                    <div className="flex items-center gap-2 text-muted-foreground">
                                         <TrendingUp className="size-4 text-orange-500" />
                                         <span className="text-sm">Racha Actual</span>
                                     </div>
@@ -121,7 +122,7 @@ export function DailyStreak() {
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-zinc-400">
+                                    <div className="flex items-center gap-2 text-muted-foreground">
                                         <Clock className="size-4 text-violet-500" />
                                         <span className="text-sm">Enfoque Total</span>
                                     </div>
@@ -129,7 +130,7 @@ export function DailyStreak() {
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-zinc-400">
+                                    <div className="flex items-center gap-2 text-muted-foreground">
                                         <CheckCircle2 className="size-4 text-emerald-500" />
                                         <span className="text-sm">Tareas Terminadas</span>
                                     </div>

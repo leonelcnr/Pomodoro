@@ -126,101 +126,87 @@ const RoomPage = () => {
     }, [roomId, usuario]);
 
     useEffect(() => {
-        if (!roomId) return;
-
-        const cargarInvitacion = async () => {
-            setCargandoInvitacion(true);
-
-
-            const { data, error } = await supabase
-                .from("room_invites")
-                .select("code, expires_at, max_uses, uses, created_at")
-                .eq("room_id", roomId)
-                .order("created_at", { ascending: false })
-                .limit(1);
-
-            setCargandoInvitacion(false);
-
-            if (error) {
-                console.error("Supabase error room_invites:", error);
-                setError(error.message);
-                setInvitacion(null);
-                return;
-            }
-
-            const inv = data?.[0] ?? null;
-            setInvitacion(inv && InvitacionValida(inv) ? inv : null);
-        };
-
-        cargarInvitacion();
-    }, [roomId]);
-
-
-    const linkInvitacion = useMemo(() => {
-        if (!invitacion?.code) return null;
-        return `${window.location.origin}/invitacion/${invitacion.code}`;
-    }, [invitacion?.code]);
-
-    // ---- Lógica de Tareas (Supabase) ----
-    useEffect(() => {
         if (!roomId || !usuario) return;
 
-        const cargarTareas = async () => {
-            const { data, error } = await supabase
+        const initRoomData = async () => {
+            setCargandoInvitacion(true);
+
+            // [async-parallel] Ejecutar requests de red independientes en paralelo
+            const [inviteRes, tasksRes, clockRes] = await Promise.all([
+                supabase
+                    .from("room_invites")
+                    .select("code, expires_at, max_uses, uses, created_at")
+                    .eq("room_id", roomId)
+                    .order("created_at", { ascending: false })
+                    .limit(1),
+                supabase
+                    .from("tasks")
+                    .select("*")
+                    .or(`room_id.eq.${roomId},and(room_id.is.null,user_id.eq.${usuario.id})`)
+                    .order("order_index", { ascending: true, nullsFirst: false })
+                    .order("created_at", { ascending: false }),
+                supabase
+                    .from("rooms")
+                    .select("timer_state")
+                    .eq("id", roomId)
+                    .single()
+            ]);
+
+            // React 18 agrupará estos setStates (Batched updates) previniendo multiples re-renders
+            setCargandoInvitacion(false);
+
+            if (inviteRes.error) {
+                console.error("Supabase error room_invites:", inviteRes.error);
+                setError(inviteRes.error.message);
+                setInvitacion(null);
+            } else {
+                const inv = inviteRes.data?.[0] ?? null;
+                setInvitacion(inv && InvitacionValida(inv) ? inv : null);
+            }
+
+            if (!tasksRes.error && tasksRes.data) {
+                tasksLoaded.current = true;
+                setTareas(tasksRes.data);
+            }
+
+            if (clockRes.data?.timer_state) {
+                setTimerState(clockRes.data.timer_state);
+            }
+        };
+
+        const recargarTareas = async () => {
+             const { data, error } = await supabase
                 .from("tasks")
                 .select("*")
                 .or(`room_id.eq.${roomId},and(room_id.is.null,user_id.eq.${usuario.id})`)
                 .order("order_index", { ascending: true, nullsFirst: false })
                 .order("created_at", { ascending: false });
-
-            if (!error && data) {
-                tasksLoaded.current = true;
-                setTareas(data);
-            }
+             if (!error && data) setTareas(data);
         };
 
-        cargarTareas();
+        initRoomData();
 
         // Suscribirse a Tareas de la Sala
         const channelTasks = supabase
-            .channel("realtime-tasks")
+            .channel(`realtime-tasks-${roomId}`)
             .on(
                 "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "tasks",
-                    filter: `room_id=eq.${roomId}`,
-                },
-                () => {
-                    cargarTareas();
-                }
+                { event: "*", schema: "public", table: "tasks", filter: `room_id=eq.${roomId}` },
+                recargarTareas
             )
             .on(
                 "postgres_changes",
-                {
-                    event: "*",
-                    schema: "public",
-                    table: "tasks",
-                    filter: `user_id=eq.${usuario.id}`,
-                },
-                () => {
-                    cargarTareas();
-                }
+                { event: "*", schema: "public", table: "tasks", filter: `user_id=eq.${usuario.id}` },
+                recargarTareas
             )
             .subscribe();
 
         // Suscribirse a Cambios de la Sala (para el Reloj Compartido)
         const channelRoom = supabase
-            .channel("realtime-room")
+            .channel(`realtime-room-${roomId}`)
             .on(
                 "postgres_changes",
-                {
-                    event: "UPDATE",
-                    schema: "public",
-                    table: "rooms",
-                    filter: `id=eq.${roomId}`,
-                },
+                { event: "UPDATE", schema: "public", table: "rooms", filter: `id=eq.${roomId}` },
                 (payload) => {
                     if (payload.new && payload.new.timer_state) {
                         setTimerState(payload.new.timer_state);
@@ -228,15 +214,6 @@ const RoomPage = () => {
                 }
             )
             .subscribe();
-
-        // Cargar estado inicial de la sala (reloj)
-        const cargarClock = async () => {
-            const { data } = await supabase.from("rooms").select("timer_state").eq("id", roomId).single();
-            if (data?.timer_state) {
-                setTimerState(data.timer_state);
-            }
-        };
-        cargarClock();
 
         return () => {
             supabase.removeChannel(channelTasks);
@@ -297,6 +274,11 @@ const RoomPage = () => {
         const newRoomId = task.room_id ? null : roomId;
         await supabase.from("tasks").update({ room_id: newRoomId }).eq("id", taskId);
     }, [tareas, roomId]);
+
+    const linkInvitacion = useMemo(() => {
+        if (!invitacion?.code) return null;
+        return `${window.location.origin}/invitacion/${invitacion.code}`;
+    }, [invitacion?.code]);
 
     const tareasMostradas = useMemo(() => {
         if (taskTab === "personal") {

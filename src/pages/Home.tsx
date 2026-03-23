@@ -22,6 +22,7 @@ const Home = () => {
         if (!usuario) return;
 
         const cargarTareas = async () => {
+
             const { data, error } = await supabase
                 .from("tasks")
                 .select("*")
@@ -36,6 +37,7 @@ const Home = () => {
         cargarTareas();
 
         // Suscribirse a Tareas Personales
+
         const channelTasks = supabase
             .channel("realtime-home-tasks")
             .on(

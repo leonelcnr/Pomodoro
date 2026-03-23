@@ -1,6 +1,7 @@
 import { createContext, useState, useContext, useEffect } from "react";
 import supabase from "@/lib/supabase";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 
 
 interface AuthContextType {
@@ -8,6 +9,8 @@ interface AuthContextType {
     signInWithGoogle: () => any;
     signInWithGithub: () => any;
     signInWithDiscord: () => any;
+    signInAnonymously: () => void;
+    linkAccount: (provider: 'google' | 'github' | 'discord') => any;
     signOut: () => any;
 }
 
@@ -16,6 +19,8 @@ const AuthContext = createContext<AuthContextType>({
     signInWithGoogle: () => { },
     signInWithGithub: () => { },
     signInWithDiscord: () => { },
+    signInAnonymously: () => { },
+    linkAccount: () => { },
     signOut: () => { },
 });
 
@@ -30,6 +35,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 provider: 'google',
                 options: {
                     redirectTo: `${window.location.origin}/`,
+                    queryParams: {
+                        prompt: 'select_account',
+                    }
                 }
             })
             if (error) throw error
@@ -69,6 +77,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }
 
+    const signInAnonymously = async () => {
+        try {
+            const { data, error } = await supabase.auth.signInAnonymously();
+            if (error) throw error;
+
+            if (!localStorage.getItem('anon_name')) {
+                localStorage.setItem('anon_name', 'Anónimo');
+            }
+
+            if (params.get("redirect")) {
+                const redirect = params.get("redirect");
+                navigate(redirect ? decodeURIComponent(redirect) : "/", { replace: true });
+            } else {
+                navigate("/", { replace: true });
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    const linkAccount = async (provider: 'google' | 'github' | 'discord') => {
+        try {
+            const { data, error } = await supabase.auth.linkIdentity({
+                provider: provider,
+                options: {
+                    redirectTo: `${window.location.origin}/`,
+                    queryParams: provider === 'google' ? { prompt: 'select_account' } : undefined,
+                }
+            })
+            if (error) throw error
+            return data;
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     const signOut = async () => {
         try {
             const { error } = await supabase.auth.signOut()
@@ -81,17 +125,50 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 
     useEffect(() => {
+        // Interceptar errores de OAuth o Vinculación desde la URL
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+        const queryParams = new URLSearchParams(window.location.search);
+        const errorCode = hashParams.get('error_code') || queryParams.get('error_code');
+
+        if (errorCode) {
+            if (errorCode === 'identity_already_exists') {
+                toast.error("Esta cuenta ya está registrada", {
+                    description: "La cuenta de Google/Github intentada ya pertenece a otro usuario registrado. Por favor, inicia sesión normalmente con ella."
+                });
+            } else {
+                const errorDesc = hashParams.get('error_description') || queryParams.get('error_description');
+                toast.error("Error de autenticación", {
+                    description: errorDesc?.replace(/\+/g, ' ') || "No se pudo vincular la cuenta."
+                });
+            }
+            // Limpiar la URL para evitar mostrar el error en recargas
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+
+        // Transición automática para usuarios que se quedaron con el sistema viejo de localStorage
+        const transitionOldAnon = async () => {
+            if (localStorage.getItem('isAnonymous') === 'true') {
+                localStorage.removeItem('isAnonymous');
+                await supabase.auth.signInAnonymously();
+            }
+        };
+        transitionOldAnon();
+
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (session == null) {
                 navigate("/login", { replace: true });
-            }
-            else {
+            } else {
+                const isAnon = session.user.is_anonymous;
+                const anonName = localStorage.getItem('anon_name') || 'Anónimo';
+
                 setUser({
-                    ...session?.user.user_metadata,
-                    id: session?.user.id,
-                    email: session?.user.email,
+                    ...session.user.user_metadata,
+                    id: session.user.id,
+                    email: isAnon ? '' : session.user.email,
+                    isAnonymous: isAnon,
+                    name: isAnon ? anonName : (session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Usuario"),
+                    avatar_url: session.user.user_metadata?.avatar_url || "",
                 });
-                console.log("user", session.user)
 
                 if (params.get("redirect")) {
                     const redirect = params.get("redirect");
@@ -107,7 +184,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 
     return (
-        <AuthContext.Provider value={{ user, signInWithGoogle, signInWithGithub, signInWithDiscord, signOut }}>
+        <AuthContext.Provider value={{ user, signInWithGoogle, signInWithGithub, signInWithDiscord, signInAnonymously, linkAccount, signOut }}>
             {children}
         </AuthContext.Provider>
     );

@@ -1,6 +1,7 @@
 import * as React from "react"
 import {
   IconCamera,
+  IconCalendarEvent,
   IconChartBar,
   IconDatabase,
   IconFileAi,
@@ -42,6 +43,11 @@ const data = {
       title: "Dashboard",
       url: "/dashboard", //Aca le puse esta ruta pq es la unica que tenemos momentaneamente.
       icon: IconChartBar,
+    },
+    {
+      title: "Calendario",
+      url: "/calendar",
+      icon: IconCalendarEvent,
     },
 
   ],
@@ -134,9 +140,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const auth = useAuth();
   const user = {
-    name: auth.user?.name || "Usuario",
-    email: auth.user?.email || "",
-    avatar: auth.user?.avatar_url || ""
+    name: auth.user?.name || auth.user?.user_metadata?.name || "Usuario",
+    email: auth.user?.isAnonymous ? "" : (auth.user?.email || ""),
+    avatar: auth.user?.avatar_url || auth.user?.user_metadata?.avatar_url || "",
+    isAnonymous: auth.user?.isAnonymous || false
   };
 
   return (
@@ -161,7 +168,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={data.navMain} />
         {/* <NavDocuments items={data.documents} /> */}
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

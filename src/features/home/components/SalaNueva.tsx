@@ -48,7 +48,7 @@ export const SalaNueva = () => {
         // 'w-full' asegura que ocupe todo el espacio a los lados
         // Usamos colores oscuros de la paleta zinc que coinciden con tu diseño original
         <div className="w-full bg-transparent border-none overflow-hidden">
-            <div className=" flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-800">
+            <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-border">
 
                 {/* SECCIÓN IZQUIERDA: CREAR SALA */}
                 <div className="flex-1 py-6 md:py-8 md:pr-8 flex flex-col justify-start">
@@ -60,7 +60,7 @@ export const SalaNueva = () => {
                     </p>
                     <Button
                         onClick={crearSala}
-                        className="w-full text-white py-6 text-md transition-colors">
+                        className="w-full text-white py-6 text-md transition-all duration-200 active:scale-[0.98]">
                         Crear
                     </Button>
                 </div>
@@ -80,13 +80,13 @@ export const SalaNueva = () => {
                             placeholder="Código de sala (Ej: 0852EF11)"
                             value={roomCode}
                             onChange={(e) => setRoomCode(e.target.value)}
-                            className="border-zinc-700  h-12 grow focus-visible:ring-[#8b5cf6]"
+                            className="h-12 grow"
                         />
 
                         <Button
                             disabled={!roomCode}
                             variant="outline"
-                            className="h-12 border-zinc-700 hover:bg-zinc-800 hover:text-white transition-colors disabled:opacity-50 sm:w-1/3"
+                            className="h-12 transition-colors disabled:opacity-50 sm:w-1/3"
                             onClick={join}
                         >
                             Unirse

@@ -68,7 +68,7 @@ const NumberInput: React.FC<NumberInputProps> = ({ id, value, onChange, min = 1 
     };
 
     return (
-        <div className="flex items-center border border-zinc-700 rounded-md overflow-hidden bg-transparent h-9">
+        <div className="flex items-center border border-input rounded-md overflow-hidden bg-transparent h-9">
             <input
                 id={id}
                 type="number"
@@ -78,11 +78,11 @@ const NumberInput: React.FC<NumberInputProps> = ({ id, value, onChange, min = 1 
                 onBlur={handleBlur}
                 className="w-16 bg-transparent text-center text-sm outline-none px-2 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none text-white"
             />
-            <div className="flex items-center border-l border-zinc-700">
+            <div className="flex items-center border-l border-input">
                 <Button
                     type="button"
                     variant="ghost"
-                    className="h-9 w-9 rounded-none hover:bg-zinc-800 p-0 text-zinc-400"
+                    className="h-9 w-9 rounded-none hover:bg-accent hover:text-accent-foreground p-0 text-muted-foreground"
                     onClick={() => {
                         const next = Math.max(min, value - 1);
                         setLocalValue(next.toString());
@@ -91,11 +91,11 @@ const NumberInput: React.FC<NumberInputProps> = ({ id, value, onChange, min = 1 
                 >
                     <Minus className="h-4 w-4" />
                 </Button>
-                <div className="w-[1px] h-9 bg-zinc-700" />
+                <div className="w-[1px] h-9 bg-border" />
                 <Button
                     type="button"
                     variant="ghost"
-                    className="h-9 w-9 rounded-none hover:bg-zinc-800 p-0 text-zinc-400"
+                    className="h-9 w-9 rounded-none hover:bg-accent hover:text-accent-foreground p-0 text-muted-foreground"
                     onClick={() => {
                         const next = value + 1;
                         setLocalValue(next.toString());
@@ -135,10 +135,10 @@ const DialogSettings: React.FC<DialogSettingsProps> = ({
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-[425px] bg-[#18181b] border-zinc-800 text-white">
+            <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>Configuración del Reloj</DialogTitle>
-                    <DialogDescription className="text-zinc-400">
+                    <DialogDescription>
                         Ajusta los minutos para cada fase de tu sesión de estudio.
                     </DialogDescription>
                 </DialogHeader>
@@ -147,10 +147,10 @@ const DialogSettings: React.FC<DialogSettingsProps> = ({
                     {/* Input Pomodoro */}
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col gap-1">
-                            <Label htmlFor="pomodoro" className="text-zinc-200 text-base font-medium">
+                            <Label htmlFor="pomodoro" className="text-base font-medium">
                                 Pomodoro
                             </Label>
-                            <span className="text-sm text-zinc-500">Duración de la sesión de enfoque.</span>
+                            <span className="text-sm text-muted-foreground">Duración de la sesión de enfoque.</span>
                         </div>
                         <NumberInput
                             id="pomodoro"
@@ -162,10 +162,10 @@ const DialogSettings: React.FC<DialogSettingsProps> = ({
                     {/* Input Descanso Corto */}
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col gap-1">
-                            <Label htmlFor="shortBreak" className="text-zinc-200 text-base font-medium">
+                            <Label htmlFor="shortBreak" className="text-base font-medium">
                                 Descanso Corto
                             </Label>
-                            <span className="text-sm text-zinc-500">Pausa breve entre pomodoros.</span>
+                            <span className="text-sm text-muted-foreground">Pausa breve entre pomodoros.</span>
                         </div>
                         <NumberInput
                             id="shortBreak"
@@ -177,10 +177,10 @@ const DialogSettings: React.FC<DialogSettingsProps> = ({
                     {/* Input Descanso Largo */}
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col gap-1">
-                            <Label htmlFor="longBreak" className="text-zinc-200 text-base font-medium">
+                            <Label htmlFor="longBreak" className="text-base font-medium">
                                 Descanso Largo
                             </Label>
-                            <span className="text-sm text-zinc-500">Pausa más extensa tras varios ciclos.</span>
+                            <span className="text-sm text-muted-foreground">Pausa más extensa tras varios ciclos.</span>
                         </div>
                         <NumberInput
                             id="longBreak"
@@ -192,10 +192,10 @@ const DialogSettings: React.FC<DialogSettingsProps> = ({
                     {/* Switch Descanso Automático */}
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col gap-1">
-                            <Label htmlFor="autoBreak" className="text-zinc-200 text-base font-medium">
+                            <Label htmlFor="autoBreak" className="text-base font-medium">
                                 Descanso Automático
                             </Label>
-                            <span className="text-sm text-zinc-500">Inicia el descanso al terminar un pomodoro.</span>
+                            <span className="text-sm text-muted-foreground">Inicia el descanso al terminar un pomodoro.</span>
                         </div>
                         <Switch
                             id="autoBreak"
@@ -210,7 +210,6 @@ const DialogSettings: React.FC<DialogSettingsProps> = ({
                         <Button
                             type="submit"
                             onClick={handleSave}
-                            className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white"
                         >
                             Guardar Cambios
                         </Button>

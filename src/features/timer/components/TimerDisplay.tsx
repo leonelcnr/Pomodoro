@@ -115,7 +115,7 @@ export const TimerDisplay = ({ link, codigo, roomId }: { link: string, codigo: s
                 {/* Contenedor del Reloj y el Indicador de Modo */}
                 <div className="relative flex flex-col items-center justify-center order-1 md:order-2">
                     {/* Indicador de Modo Minimalista */}
-                    <div className="absolute -top-2 md:-top-3 flex items-center justify-center gap-2 transition-all duration-300">
+                    <div className="absolute -top-6 md:-top-10 flex items-center justify-center gap-2 transition-all duration-300">
                         <div className={`w-1.5 h-1.5 rounded-full ${mode === 'pomodoro' ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
                             mode === 'shortBreak' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' :
                                 'bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]'

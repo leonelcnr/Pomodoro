@@ -18,6 +18,7 @@ export default function Dashboard() {
     if (!user) return;
 
     const loadDashboardData = async () => {
+
       // 1. Cargar Estadísticas (Minutos totales y Racha)
       const { data: userStats } = await supabase
         .from('user_stats')
@@ -125,41 +126,41 @@ export default function Dashboard() {
 
           {/* Cards resumen */}
           <div className="grid gap-4 md:grid-cols-3 w-full min-w-0">
-            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm overflow-hidden">
+            <Card className="bg-card shadow-none overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
-                <CardTitle className="text-sm font-medium text-zinc-400 line-clamp-1 break-all sm:break-normal">Tiempo de Concentración</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground line-clamp-1 break-all sm:break-normal">Tiempo de Concentración</CardTitle>
                 <Clock className="h-4 w-4 text-violet-500 shrink-0" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold truncate">{formatMinutes(stats.totalMinutes)}</div>
-                <p className="text-xs text-zinc-500 mt-1 truncate">Total acumulado</p>
+                <p className="text-xs text-muted-foreground mt-1 truncate">Total acumulado</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm overflow-hidden">
+            <Card className="bg-card shadow-none overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
-                <CardTitle className="text-sm font-medium text-zinc-400 line-clamp-1 break-all sm:break-normal">Tareas Terminadas</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground line-clamp-1 break-all sm:break-normal">Tareas Terminadas</CardTitle>
                 <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold truncate">{stats.completedTasks}</div>
-                <p className="text-xs text-zinc-500 mt-1 truncate">Histórico</p>
+                <p className="text-xs text-muted-foreground mt-1 truncate">Histórico</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm overflow-hidden">
+            <Card className="bg-card shadow-none overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
-                <CardTitle className="text-sm font-medium text-zinc-400 line-clamp-1 break-all sm:break-normal">Racha Actual</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground line-clamp-1 break-all sm:break-normal">Racha Actual</CardTitle>
                 <TrendingUp className="h-4 w-4 text-orange-500 shrink-0" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold truncate">{stats.currentStreak} {stats.currentStreak === 1 ? 'Día' : 'Días'}</div>
-                <p className="text-xs text-zinc-500 mt-1 truncate">Sigue así</p>
+                <p className="text-xs text-muted-foreground mt-1 truncate">Sigue así</p>
               </CardContent>
             </Card>
 
             {/* Gráfico Principal */}
-            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm col-span-1 md:col-span-2 overflow-hidden w-full min-w-0">
+            <Card className="bg-card border border-border col-span-1 md:col-span-2 overflow-hidden w-full min-w-0">
               <CardHeader>
                 <CardTitle className="truncate">Flujo de los últimos 7 días</CardTitle>
               </CardHeader>
@@ -169,32 +170,33 @@ export default function Dashboard() {
                     <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorMin" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                          <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.8} />
+                          <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.1} />
                         </linearGradient>
                       </defs>
                       <XAxis
                         dataKey="name"
-                        stroke="#52525b"
+                        stroke="var(--muted-foreground)"
                         fontSize={12}
                         tickLine={false}
                         axisLine={false}
                       />
                       <YAxis
-                        stroke="#52525b"
+                        stroke="var(--muted-foreground)"
                         fontSize={12}
                         tickLine={false}
                         axisLine={false}
                         tickFormatter={(value) => `${value}m`}
                       />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '8px' }}
-                        itemStyle={{ color: '#e4e4e7' }}
+                        contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px' }}
+                        itemStyle={{ color: 'var(--card-foreground)' }}
+                        cursor={{ stroke: 'var(--muted-foreground)', strokeWidth: 1, strokeDasharray: '4 4' }}
                       />
                       <Area
                         type="monotone"
                         dataKey="minutes"
-                        stroke="#8b5cf6"
+                        stroke="var(--primary)"
                         strokeWidth={2}
                         fillOpacity={1}
                         fill="url(#colorMin)"
@@ -206,9 +208,9 @@ export default function Dashboard() {
             </Card>
 
             {/* Lista de Tareas Recientes */}
-            <Card className="bg-zinc-900/50 border-zinc-800/60 shadow-none backdrop-blur-sm col-span-1 md:col-span-1">
+            <Card className="bg-card shadow-none col-span-1 md:col-span-1">
               <CardHeader>
-                <CardTitle className="text-sm font-medium text-zinc-300">Últimas Tareas Completadas</CardTitle>
+                <CardTitle className="text-sm font-medium">Últimas Tareas Completadas</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -217,7 +219,7 @@ export default function Dashboard() {
                       <CheckCircle2 className="h-4 w-4 text-emerald-500/80 shrink-0" />
                       <div className="flex flex-col overflow-hidden">
                         <span className="text-sm font-medium line-through text-muted-foreground truncate">{task.header}</span>
-                        <span className="text-[10px] text-zinc-500 uppercase tracking-wider">{task.type}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{task.type}</span>
                       </div>
                     </div>
                   ))}

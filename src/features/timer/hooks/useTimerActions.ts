@@ -57,10 +57,16 @@ export const useTimer = () => {
           // Guardar sesión de estudio si estábamos en pomodoro
           if (mode === 'pomodoro' && user) {
             const minutesToSave = settings.pomodoro;
+            
+            supabase.rpc('update_user_stats', { extra_minutes: minutesToSave })
+              .then(({ error: statsError }) => {
+                if (statsError) console.error("Error update_user_stats:", statsError);
+              });
+
             supabase.from('study_sessions').insert([
               { user_id: user.id, duration_minutes: minutesToSave }
-            ]).then(({error}) => {
-                if(error) console.error("Error saving study session:", error);
+            ]).then(({ error: sessionError }) => {
+              if (sessionError) console.error("Error inserting study_session:", sessionError);
             });
           }
 
