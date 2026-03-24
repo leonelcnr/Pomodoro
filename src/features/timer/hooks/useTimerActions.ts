@@ -26,9 +26,28 @@ export const useTimer = () => {
   useEffect(() => {
     let interval: number | any;
 
-    if (isActive && timeLeft > 0) {
-      // 1. Si acabamos de arrancar (o reanudar), calculamos cuándo debe terminar.
-      // La fórmula es: Ahora + Segundos que faltan * 1000 (ms)
+    if (isActive) {
+      if (mode === 'stopwatch') {
+        // Lógica del Cronómetro (cuenta progresiva)
+        if (!endTimeRef.current) {
+          // Usamos endTimeRef como startTimeRef para el cronómetro
+          endTimeRef.current = Date.now() - timeLeft * 1000;
+        }
+
+        interval = setInterval(() => {
+          const now = Date.now();
+          const difference = now - endTimeRef.current!;
+          const secondsElapsed = Math.floor(difference / 1000);
+
+          if (secondsElapsed !== timeLeft) {
+            setTimeLeft(secondsElapsed);
+          }
+        }, 200);
+
+      } else if (timeLeft > 0) {
+        // Lógica del Temporizador (cuenta regresiva)
+        // 1. Si acabamos de arrancar (o reanudar), calculamos cuándo debe terminar.
+        // La fórmula es: Ahora + Segundos que faltan * 1000 (ms)
       if (!endTimeRef.current) {
         endTimeRef.current = Date.now() + timeLeft * 1000;
       }
@@ -106,8 +125,9 @@ export const useTimer = () => {
           }
         }
       }, 200); // Checkeamos cada 200ms para mayor fluidez visual, aunque el cálculo es exacto
+      }
     } else {
-      // Si pausamos, limpiamos el intervalo y la referencia de tiempo final
+      // Si pausamos o la condición de timeLeft no se cumple, limpiamos el intervalo
       if (interval) clearInterval(interval);
       endTimeRef.current = null;
     }
@@ -120,12 +140,20 @@ export const useTimer = () => {
   const toggleTimer = () => setIsActive(!isActive);
   
   const handleReset = () => {
-    setMode('pomodoro');
-    endTimeRef.current = null;
+    if (mode === 'stopwatch') {
+      setTimeLeft(0);
+      setIsActive(false);
+      endTimeRef.current = null;
+    } else {
+      setMode('pomodoro');
+      endTimeRef.current = null;
+    }
   };
 
   const setPomodoro = () => setMode('pomodoro');
   const setLongBreak = () => setMode('longBreak');
   const setShortBreak = () => setMode('shortBreak');
-  return { timeLeft, isActive,mode, toggleTimer, handleReset, setPomodoro, setLongBreak, setShortBreak };
+  const setStopwatch = () => setMode('stopwatch');
+  
+  return { timeLeft, isActive, mode, toggleTimer, handleReset, setPomodoro, setLongBreak, setShortBreak, setStopwatch };
 };

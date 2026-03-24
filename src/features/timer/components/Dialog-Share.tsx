@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Share2 } from 'lucide-react'
+import React from 'react';
 
 
 const DialogShare = ({ link, codigo }: { link: string, codigo: string }) => {
@@ -59,4 +60,4 @@ const DialogShare = ({ link, codigo }: { link: string, codigo: string }) => {
     )
 }
 
-export default DialogShare;
+export default React.memo(DialogShare);

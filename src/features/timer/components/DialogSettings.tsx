@@ -91,7 +91,7 @@ const NumberInput: React.FC<NumberInputProps> = ({ id, value, onChange, min = 1 
                 >
                     <Minus className="h-4 w-4" />
                 </Button>
-                <div className="w-[1px] h-9 bg-border" />
+                <div className="w-px h-9 bg-border" />
                 <Button
                     type="button"
                     variant="ghost"
@@ -220,4 +220,4 @@ const DialogSettings: React.FC<DialogSettingsProps> = ({
     );
 };
 
-export default DialogSettings;
+export default React.memo(DialogSettings);

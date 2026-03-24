@@ -5,7 +5,7 @@ interface TimerState {
   timeLeft: number;      // Tiempo restante en segundos
   initialTime: number;   // Para poder resetear (ej: 25 * 60)
   isActive: boolean;     // ¿Está corriendo el reloj?
-  mode: 'pomodoro' | 'shortBreak' | 'longBreak'; // El modo actual
+  mode: 'pomodoro' | 'shortBreak' | 'longBreak' | 'stopwatch'; // El modo actual
   settings: {
     pomodoro: number;
     shortBreak: number;
@@ -16,11 +16,11 @@ interface TimerState {
   // Acciones (funciones que modifican el estado)
   setTimeLeft: (time: number) => void;
   setIsActive: (active: boolean) => void;
-  setMode: (mode: 'pomodoro' | 'shortBreak' | 'longBreak') => void;
+  setMode: (mode: 'pomodoro' | 'shortBreak' | 'longBreak' | 'stopwatch') => void;
   setSettings: (settings: { pomodoro: number; shortBreak: number; longBreak: number; autoBreak: boolean }) => void;
   resetTimer: () => void;
   // Para la sincronización (nuevo)
-  setTimerState: (state: { timeLeft: number; isActive: boolean; mode: 'pomodoro' | 'shortBreak' | 'longBreak'; updatedAt?: string }) => void;
+  setTimerState: (state: { timeLeft: number; isActive: boolean; mode: 'pomodoro' | 'shortBreak' | 'longBreak' | 'stopwatch'; updatedAt?: string }) => void;
   lastLocalUpdate: number;
 }
 
@@ -42,7 +42,7 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   setSettings: (settings) => set((state) => {
     const updates: Partial<TimerState> = { settings };
     
-    if (!state.isActive) {
+    if (!state.isActive && state.mode !== 'stopwatch') {
       const times = {
         pomodoro: settings.pomodoro * 60,
         shortBreak: settings.shortBreak * 60,
@@ -57,7 +57,11 @@ export const useTimerStore = create<TimerState>((set, get) => ({
   }),
   setMode: (mode) => {
     const { settings } = get();
-    // Cuando cambiamos de modo, reseteamos el tiempo según el modo
+    // Cuando cambiamos a stopwatch, empezamos en 0. Si no, reseteamos el tiempo según el modo
+    if (mode === 'stopwatch') {
+      set({ mode, timeLeft: 0, initialTime: 0, isActive: false, lastLocalUpdate: Date.now() });
+      return;
+    }
     const times = {
       pomodoro: settings.pomodoro * 60,
       shortBreak: settings.shortBreak * 60,
@@ -76,17 +80,20 @@ export const useTimerStore = create<TimerState>((set, get) => ({
     }
     
     // Si cambia el modo por red, actualizamos también initialTime
-    const times = {
-        pomodoro: state.settings.pomodoro * 60,
-        shortBreak: state.settings.shortBreak * 60,
-        longBreak: state.settings.longBreak * 60,
-    };
+    let initialTime = state.initialTime;
+    if (state.mode !== payload.mode) {
+       if (payload.mode === 'stopwatch') {
+           initialTime = 0;
+       } else {
+           initialTime = state.settings[payload.mode] * 60;
+       }
+    }
 
     return {
       timeLeft: newTimeLeft,
       isActive: payload.isActive,
       mode: payload.mode,
-      initialTime: state.mode !== payload.mode ? times[payload.mode] : state.initialTime
+      initialTime
     };
   }),
 }));

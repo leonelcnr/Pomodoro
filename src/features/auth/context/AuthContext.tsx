@@ -124,6 +124,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
 
+
+
     useEffect(() => {
         // Interceptar errores de OAuth o Vinculación desde la URL
         const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
@@ -145,15 +147,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             window.history.replaceState(null, '', window.location.pathname);
         }
 
-        // Transición automática para usuarios que se quedaron con el sistema viejo de localStorage
-        const transitionOldAnon = async () => {
-            if (localStorage.getItem('isAnonymous') === 'true') {
-                localStorage.removeItem('isAnonymous');
-                await supabase.auth.signInAnonymously();
-            }
-        };
-        transitionOldAnon();
-
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (session == null) {
                 navigate("/login", { replace: true });
@@ -161,18 +154,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const isAnon = session.user.is_anonymous;
                 const anonName = localStorage.getItem('anon_name') || 'Anónimo';
 
-                setUser({
-                    ...session.user.user_metadata,
-                    id: session.user.id,
-                    email: isAnon ? '' : session.user.email,
-                    isAnonymous: isAnon,
-                    name: isAnon ? anonName : (session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Usuario"),
-                    avatar_url: session.user.user_metadata?.avatar_url || "",
+                setUser((prev: any) => {
+                    if (prev?.id === session.user.id && prev?.isAnonymous === isAnon) {
+                        return prev;
+                    }
+                    return {
+                        ...session.user.user_metadata,
+                        id: session.user.id,
+                        email: isAnon ? '' : session.user.email,
+                        isAnonymous: isAnon,
+                        name: isAnon ? anonName : (session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Usuario"),
+                        avatar_url: session.user.user_metadata?.avatar_url || "",
+                    };
                 });
 
                 if (params.get("redirect")) {
                     const redirect = params.get("redirect");
-                    navigate(redirect ? decodeURIComponent(redirect) : "/home", { replace: true });
+                    navigate(redirect ? decodeURIComponent(redirect) : "/", { replace: true });
                 }
             }
         });

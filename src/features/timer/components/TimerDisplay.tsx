@@ -3,14 +3,13 @@ import { Button } from '@/components/ui/button'
 import { SlidingNumber } from '@/components/animate-ui/primitives/texts/sliding-number'
 import DialogShare from './Dialog-Share';
 import DialogSettings from './DialogSettings';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Play, Pause, RotateCcw, Copy, PictureInPicture2, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useTimerStore } from '../../../store/timerStore';
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import supabase from '@/config/supabase';
 import { useDocumentPiP } from '@/hooks/useDocumentPiP';
 import { FloatingTimer } from './FloatingTimer';
-import { Copy, PictureInPicture2 } from 'lucide-react';
 import { MusicPlayer } from '../../room/components/MusicPlayer';
 
 function DosDigitos({ value }: { value: number }) {
@@ -33,13 +32,19 @@ export interface TimerSettings {
 
 
 export const TimerDisplay = ({ link, codigo, roomId }: { link: string, codigo: string, roomId?: string }) => {
-    const { timeLeft, isActive, mode, toggleTimer, handleReset } = useTimer();
+    const { timeLeft, isActive, mode, toggleTimer, handleReset, setPomodoro, setLongBreak, setShortBreak, setStopwatch } = useTimer();
     const { settings, setSettings, lastLocalUpdate } = useTimerStore();
+
+    const handleModeClick = () => {
+        if (mode === 'pomodoro') setShortBreak();
+        else if (mode === 'shortBreak') setLongBreak();
+        else setPomodoro();
+    };
     const { isSupported, pipWindow, requestPiP, closePiP } = useDocumentPiP();
 
-    const handleSaveSettings = (newSettings: TimerSettings) => {
+    const handleSaveSettings = React.useCallback((newSettings: TimerSettings) => {
         setSettings(newSettings);
-    };
+    }, [setSettings]);
 
     const togglePiP = async () => {
         if (pipWindow) {
@@ -115,14 +120,57 @@ export const TimerDisplay = ({ link, codigo, roomId }: { link: string, codigo: s
                 {/* Contenedor del Reloj y el Indicador de Modo */}
                 <div className="relative flex flex-col items-center justify-center order-1 md:order-2">
                     {/* Indicador de Modo Minimalista */}
-                    <div className="absolute -top-6 md:-top-10 flex items-center justify-center gap-2 transition-all duration-300">
-                        <div className={`w-1.5 h-1.5 rounded-full ${mode === 'pomodoro' ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
-                            mode === 'shortBreak' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' :
-                                'bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]'
-                            }`} />
-                        <span className="text-[10px] sm:text-xs font-medium tracking-[0.15em] text-muted-foreground uppercase select-none whitespace-nowrap">
-                            {mode === 'pomodoro' ? 'Pomodoro' : mode === 'shortBreak' ? 'Descanso Corto' : 'Descanso Largo'}
-                        </span>
+                    <div className="absolute -top-6 md:-top-10 flex items-center justify-center transition-all duration-300 group w-full">
+                        {mode === 'stopwatch' ? (
+                            <div className="relative flex items-center justify-center cursor-default">
+                                {/* Botón para volver al temporizador */}
+                                <div className="absolute right-full mr-1 md:mr-2 flex items-center h-full">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={setPomodoro}
+                                        className="w-6 h-6 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 rounded-full"
+                                        title="Volver a Temporizador"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors select-none">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_6px_rgba(139,92,246,0.5)] transition-colors duration-300" />
+                                    <span className="text-[10px] sm:text-xs font-medium tracking-[0.15em] text-muted-foreground uppercase whitespace-nowrap">
+                                        Cronómetro
+                                    </span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="relative flex items-center justify-center">
+                                <button 
+                                    onClick={handleModeClick}
+                                    className="flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 md:px-3 px-2 py-1.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                >
+                                    <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${mode === 'pomodoro' ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
+                                        mode === 'shortBreak' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' :
+                                            'bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]'
+                                        }`} />
+                                    <span className="text-[10px] sm:text-xs font-medium tracking-[0.15em] text-muted-foreground uppercase select-none whitespace-nowrap">
+                                        {mode === 'pomodoro' ? 'Pomodoro' : mode === 'shortBreak' ? 'Descanso Corto' : 'Descanso Largo'}
+                                    </span>
+                                </button>
+                                
+                                {/* Botón para ir a cronómetro */}
+                                <div className="absolute left-full ml-1 md:ml-2 flex items-center h-full">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={setStopwatch}
+                                        className="w-6 h-6 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 rounded-full"
+                                        title="Ir a cronómetro"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* El Reloj Minimalista */}

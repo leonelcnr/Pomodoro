@@ -5,7 +5,7 @@ import { Music, X, Play, Radio } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import supabase from '@/config/supabase';
 
-export function MusicPlayer({ roomId }: { roomId?: string }) {
+export const MusicPlayer = React.memo(function MusicPlayer({ roomId }: { roomId?: string }) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -218,4 +218,4 @@ export function MusicPlayer({ roomId }: { roomId?: string }) {
             </div>
         </div>
     );
-}
+});
