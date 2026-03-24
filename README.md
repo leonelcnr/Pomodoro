@@ -1,92 +1,80 @@
-﻿<div align="center">  
-  <img src="/public/doro.svg" alt="Doro Logo" width="120" />
+<div align="center">
+  <img src="./public/doro.svg" alt="Doro" width="72" />
   <h1>Doro</h1>
-  <p>Tu compañero ideal para estudiar de forma sincronizada y aumentar tu productividad.</p>
+  <p>Pomodoro colaborativo en tiempo real — estudia con amigos, mantén el ritmo, mide tu progreso.</p>
+
+  <a href="https://doro.page"><img src="https://img.shields.io/badge/Demo-doro.page-black?style=flat-square" /></a>
+  <img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript" />
+  <img src="https://img.shields.io/badge/Supabase-realtime-3ecf8e?style=flat-square&logo=supabase" />
 </div>
 
 ---
 
-## 🚀 Sobre Doro
+## Capturas
 
-**Doro** es una aplicación de temporizador Pomodoro avanzada diseñada para estudiar, trabajar o concentrarse tanto de manera individual como con amigos. Doro permite sincronizar salas de estudio con un chat, música y tareas compartidas usando actualizaciones en tiempo real.
+| Home | Sala |
+|------|------|
+| ![Home](./public/Home.png) | ![Room](./public/RoomPage.png) |
 
-## ✨ Funcionalidades Principales
+| Dashboard | Login |
+|-----------|-------|
+| ![Dashboard](./public/dashboard.png) | ![Login](./public/login.png) |
 
-- **⏱️ Temporizador Pomodoro**:
-  Personaliza tus tiempos de estudio, descansos cortos y descansos largos.
-- **🤝 Salas de Estudio Sincronizadas**:
-  Crea o únete a salas en tiempo real. Estudia de forma concurrente con amigos o colegas. El estado del temporizador se comparte para todos los participantes.
-- **🎵 Reproductor de Música Integrado**:
-  - **Música de la Sala (YouTube)**: Escucha de manera sincronizada videos con todos los integrantes de tu sala.
-  - **Música Individual (Spotify)**: También puedes usar enlaces de Spotify locales si prefieres concentrarte con tu propia música.
-- **📝 Tareas de la Sala (Drag & Drop)**:
-  Una lista de tareas compartida mediante arrastrar y soltar (Drag & Drop) totalmente sincronizada en tiempo real. Todos ven el progreso de forma instantánea.
-- **🔥 Rachas (Streaks) y Estadísticas**:
-  Lleva el control de tus rachas de estudio diarias. Completa al menos una sesión para mantener viva tu llama y revisar tus estadísticas de productividad.
-- **🔐 Autenticación Rápida**:
-  Inicia sesión de forma segura y sencilla utilizando tus cuentas favoritas (Google, GitHub, Discord) mediante OAuth.
-- **🎨 Modo Oscuro/Claro**:
-  Interfaz de usuario moderna y adaptable a tus preferencias visuales.
+---
 
-## 🛠️ Tecnologías y Herramientas
+## Funcionalidades
 
-El proyecto está construido usando las tecnologías más modernas del ecosistema web:
+| | |
+|---|---|
+| ⏱ **Pomodoro y Cronómetro** | Tiempos personalizables para foco, descanso corto y largo |
+| 🤝 **Salas en tiempo real** | Crea o únete a salas compartidas — el temporizador se sincroniza para todos |
+| 🎵 **Música compartida** | YouTube sincronizado en sala · Spotify individual |
+| ✅ **Tareas drag & drop** | Lista compartida con drag & drop, visible para todos en tiempo real |
+| 🔥 **Rachas y estadísticas** | Mantené tu racha diaria y revisá tu historial de productividad |
+| 🔐 **OAuth** | Google · GitHub · Discord — o acceso rápido anónimo |
+| 🌙 **Modo oscuro / claro** | Tema adaptable sin configuración extra |
 
-- **Frontend**: [React 19](https://react.dev/) y [TypeScript](https://www.typescriptlang.org/) impulsado por [Vite](https://vitejs.dev/)
-- **Estilos y UI**:
-  - [Tailwind CSS v4](https://tailwindcss.com/)
-  - [Shadcn UI](https://ui.shadcn.com/) y [Hero UI](https://nextui.org/)
-  - [Radix UI](https://www.radix-ui.com/) para accesibilidad
-- **Animaciones y Drag & Drop**:
-  - [Framer Motion](https://www.framer.com/motion/)
-  - [dnd-kit](https://dndkit.com/)
-- **Backend / BaaS**: [Supabase](https://supabase.com/) (Base de datos PostgreSQL, Auth OAuth y Suscripciones Realtime)
-- **Estado Global**: [Zustand](https://github.com/pmndrs/zustand)
-- **Analíticas**: [Vercel Analytics](https://vercel.com/analytics)
-- **Gráficos y Datos**: [Recharts](https://recharts.org/)
+---
 
-## 📸 Capturas de Pantalla
+## Extensión de Chrome
 
-- **Home**:
-  ![Home](./public/Home.png)
-- **Login**:
-  ![Login](./public/login.png)
-- **Sala de Estudio**:
-  ![Room](./public/RoomPage.png)
-- **Sala de Estadisticas**:
-  ![Room](./public/dashboard.png)
+Desde el navegador podés abrir una **ventana emergente (popup)** con acceso rápido al temporizador sin salir de tu pestaña activa. Dentro del popup podés:
 
-## 🚀 Instalación y Desarrollo Local
+- Ver el tiempo restante de tu sesión actual
+- Cambiar entre **modo Pomodoro** y **Cronómetro** con un clic
+- Iniciar, pausar o reiniciar el temporizador
 
-1. **Clonar el repositorio**:
+---
 
-   ```bash
-   git clone https://github.com/leonelcnr/Pomodoro.git
-   ```
+## Stack
 
-2. **Instalar dependencias**:
+| Área | Tecnología |
+|------|-----------|
+| Frontend | React 19 + TypeScript + Vite |
+| Estilos | Tailwind CSS v4 · Shadcn UI · Radix UI |
+| Animaciones | Framer Motion · dnd-kit |
+| Backend | Supabase (PostgreSQL + Auth + Realtime) |
+| Estado | Zustand |
+| Deploy | Vercel |
 
-   ```bash
-   npm install
-   ```
+---
 
-3. **Variables de Entorno**:
-   Crea un archivo `.env.local` en la raíz copiando el ejemplo. Debes configurar tus claves de Supabase:
+## Desarrollo local
 
-   ```env
-   VITE_SUPABASE_URL=tu_url_de_proyecto
-   VITE_SUPABASE_ANON_KEY=tu_anon_key
-   ```
+```bash
+git clone https://github.com/leonelcnr/Pomodoro.git
+cd Pomodoro
+npm install
+```
 
-4. **Correr el servidor de desarrollo**:
+Crea `.env.local` con tus claves de Supabase:
 
-   ```bash
-   npm run dev
-   ```
+```env
+VITE_SUPABASE_URL=tu_url_de_proyecto
+VITE_SUPABASE_ANON_KEY=tu_anon_key
+```
 
-5. **Construir para Producción**:
-   ```bash
-   npm run build
-   ```
-
-
+```bash
+npm run dev
+```
