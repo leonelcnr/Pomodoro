@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, Trash2 } from "lucide-react"
 import { es } from "date-fns/locale"
 
 import { cn } from "@/lib/utils"
@@ -30,8 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { toast } from "sonner"
 import { useMemo } from "react"
+import type { CalendarEvent, EventType } from "../calendarService"
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -39,20 +39,37 @@ const formSchema = z.object({
   }),
   date: z.date(),
   type: z.enum(["Examen", "Entrega", "Estudio", "Otro"]),
+  description: z.string().optional(),
 })
 
 interface AddEventFormProps {
   onSuccess?: () => void;
+  /** When provided, form enters edit mode */
+  event?: CalendarEvent;
   initialDate?: Date;
+  onSubmitEvent: (
+    values: { title: string; date: Date; type: EventType; description?: string },
+    id?: string
+  ) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
 }
 
-export function AddEventForm({ onSuccess, initialDate }: AddEventFormProps) {
+export function AddEventForm({
+  onSuccess,
+  event,
+  initialDate,
+  onSubmitEvent,
+  onDelete,
+}: AddEventFormProps) {
+  const isEdit = !!event;
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      type: "Examen",
-      date: initialDate,
+      title: event?.title ?? "",
+      type: (event?.type as EventType) ?? "Examen",
+      date: event ? new Date(event.event_date + "T00:00:00") : initialDate,
+      description: event?.description ?? "",
     },
   })
 
@@ -62,17 +79,20 @@ export function AddEventForm({ onSuccess, initialDate }: AddEventFormProps) {
     return today;
   }, [])
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Aquí iría la lógica para interactuar con Supabase
-    toast.success("Evento añadido con éxito", {
-      description: `${values.title} el ${format(values.date, "PPP", { locale: es })}`,
-    });
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    // Close the dialog immediately — background work reports via toast
+    form.reset();
+    onSuccess?.();
+    // Fire-and-forget: hook handles optimistic update + error rollback
+    onSubmitEvent(values, event?.id);
+  }
 
-    // Simulate API call
-    setTimeout(() => {
-      form.reset();
-      if (onSuccess) onSuccess();
-    }, 500);
+  async function handleDelete() {
+    if (event && onDelete) {
+      // Close dialog immediately — hook handles optimistic removal + rollback
+      onSuccess?.();
+      onDelete(event.id);
+    }
   }
 
   return (
@@ -159,9 +179,36 @@ export function AddEventForm({ onSuccess, initialDate }: AddEventFormProps) {
           )}
         />
 
-        <Button type="submit" className="w-full">
-          Guardar Evento
-        </Button>
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descripción <span className="text-muted-foreground text-xs">(opcional)</span></FormLabel>
+              <FormControl>
+                <Input placeholder="Notas adicionales..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className={cn("flex gap-2", isEdit ? "flex-row justify-between" : "flex-col")}>
+          {isEdit && onDelete && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar
+            </Button>
+          )}
+          <Button type="submit" className={cn(!isEdit && "w-full")}>
+            {isEdit ? "Guardar Cambios" : "Guardar Evento"}
+          </Button>
+        </div>
       </form>
     </Form>
   )

@@ -11,6 +11,8 @@ interface AuthContextType {
     signInWithDiscord: () => any;
     signInAnonymously: () => void;
     linkAccount: (provider: 'google' | 'github' | 'discord') => any;
+    connectGoogleCalendar: () => Promise<void>;
+    hasGoogleLinked: boolean;
     signOut: () => any;
 }
 
@@ -21,11 +23,14 @@ const AuthContext = createContext<AuthContextType>({
     signInWithDiscord: () => { },
     signInAnonymously: () => { },
     linkAccount: () => { },
+    connectGoogleCalendar: async () => { },
+    hasGoogleLinked: false,
     signOut: () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<any>(null);
+    const [hasGoogleLinked, setHasGoogleLinked] = useState(false);
     const navigate = useNavigate();
     const [params] = useSearchParams();
 
@@ -113,6 +118,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }
 
+    /**
+     * Connect Google Calendar for any user type:
+     * - Google users: re-authenticate with calendar scope
+     * - Discord/anon users: link Google identity with calendar scope
+     * We request offline access so Supabase saves the provider_refresh_token
+     * which our Edge Function will then use.
+     */
+    const connectGoogleCalendar = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        const provider = session?.user?.app_metadata?.provider;
+        const identities = session?.user?.identities ?? [];
+        const hasGoogle = identities.some((i: any) => i.provider === 'google');
+
+        const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar';
+        const REDIRECT = `${window.location.origin}/calendar`;
+
+        if (hasGoogle) {
+            // Re-authenticate to get calendar scope (Google gives refresh_token if 'consent' is prompted)
+            await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: REDIRECT,
+                    scopes: CALENDAR_SCOPE,
+                    queryParams: { prompt: 'consent', access_type: 'offline' },
+                },
+            });
+        } else {
+            // Link Google to the existing (Discord/anon) account
+            await supabase.auth.linkIdentity({
+                provider: 'google',
+                options: {
+                    redirectTo: REDIRECT,
+                    scopes: CALENDAR_SCOPE,
+                    queryParams: { prompt: 'consent', access_type: 'offline' },
+                },
+            });
+        }
+    };
+
     const signOut = async () => {
         try {
             const { error } = await supabase.auth.signOut()
@@ -154,6 +198,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const isAnon = session.user.is_anonymous;
                 const anonName = localStorage.getItem('anon_name') || 'Anónimo';
 
+                // Track whether this session has a Google identity linked
+                const identities = session.user.identities ?? [];
+                setHasGoogleLinked(identities.some((i: any) => i.provider === 'google'));
+
                 setUser((prev: any) => {
                     if (prev?.id === session.user.id && prev?.isAnonymous === isAnon) {
                         return prev;
@@ -165,6 +213,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         isAnonymous: isAnon,
                         name: isAnon ? anonName : (session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Usuario"),
                         avatar_url: session.user.user_metadata?.avatar_url || "",
+                        // Store provider_token to call Google Calendar API
+                        provider_token: session.provider_token ?? null,
                     };
                 });
 
@@ -182,7 +232,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
 
     return (
-        <AuthContext.Provider value={{ user, signInWithGoogle, signInWithGithub, signInWithDiscord, signInAnonymously, linkAccount, signOut }}>
+        <AuthContext.Provider value={{ user, signInWithGoogle, signInWithGithub, signInWithDiscord, signInAnonymously, linkAccount, connectGoogleCalendar, hasGoogleLinked, signOut }}>
             {children}
         </AuthContext.Provider>
     );

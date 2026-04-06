@@ -1,13 +1,18 @@
 import { Outlet } from "react-router-dom";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+
 const HomeLayout = () => {
     return (
         <div className="">
             <Outlet />
-            <Toaster theme="dark" position="top-right" richColors />
+            <Toaster
+                position="bottom-right"
+                richColors
+                closeButton
+                duration={4000}
+            />
         </div>
     );
 }
 
 export default HomeLayout
-
