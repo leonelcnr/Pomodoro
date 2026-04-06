@@ -205,10 +205,8 @@ export default function CalendarPage() {
                         <CalendarIcon className="mr-2 h-4 w-4" />
                       )}
                       <div className="flex flex-col">
-                        <span>{hasGoogleLinked ? "Reconectar Google Calendar" : "Conectar Google Calendar"}</span>
-                        {!hasGoogleLinked && (
-                          <span className="text-xs text-muted-foreground">Permite vincular tu cuenta de Google</span>
-                        )}
+                        <span>Conectar Google Calendar</span>
+                        <span className="text-xs text-muted-foreground">Sincroniza tus eventos automáticamente</span>
                       </div>
                     </DropdownMenuItem>
                   )}

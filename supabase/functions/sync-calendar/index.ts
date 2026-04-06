@@ -94,7 +94,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const providerRefreshToken = googleIdentity.identity_data?.provider_refresh_token;
+    const providerRefreshToken = googleIdentity.identity_data?.provider_refresh_token || adminUser.user.user_metadata?.provider_refresh_token;
+    
     if (!providerRefreshToken) {
       return new Response(JSON.stringify({ error: "Google provider_refresh_token missing. User must reconnect." }), {
         status: 400,

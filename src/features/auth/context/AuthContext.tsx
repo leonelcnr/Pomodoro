@@ -202,6 +202,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 const identities = session.user.identities ?? [];
                 setHasGoogleLinked(identities.some((i: any) => i.provider === 'google'));
 
+                // FIXED: Guardo el refresh token en user_metadata porque Supabase Auth a veces no actualiza identity_data
+                // al reconectar una cuenta ya existente.
+                if (session.provider_refresh_token && session.provider_refresh_token !== session.user.user_metadata?.provider_refresh_token) {
+                    supabase.auth.updateUser({
+                        data: { provider_refresh_token: session.provider_refresh_token }
+                    });
+                }
+
                 setUser((prev: any) => {
                     if (prev?.id === session.user.id && prev?.isAnonymous === isAnon) {
                         return prev;
@@ -213,7 +221,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         isAnonymous: isAnon,
                         name: isAnon ? anonName : (session.user.user_metadata?.name || session.user.email?.split("@")[0] || "Usuario"),
                         avatar_url: session.user.user_metadata?.avatar_url || "",
-                        // Store provider_token to call Google Calendar API
                         provider_token: session.provider_token ?? null,
                     };
                 });

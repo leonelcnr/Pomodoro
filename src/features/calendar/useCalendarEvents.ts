@@ -92,7 +92,7 @@ export function useCalendarEvents(
             return withGoogleId;
           } catch (gcalErr) {
             console.error("Google Calendar sync failed:", gcalErr);
-            toast.error("Error en Google Calendar", { description: "Revisa la configuración." });
+            // Fallo silencioso si no tiene los permisos o no lo vinculó completamente.
           }
         }
 
