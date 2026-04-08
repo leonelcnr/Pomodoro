@@ -25,7 +25,6 @@ import {
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
 import { z } from "zod"
 import { Trash2, Edit2, Star, X, ArrowUp, ArrowRight, ArrowDown, CheckCircle2, Timer, CircleDashed, ChevronsUpDown, EyeOff, GripVertical } from "lucide-react"
 
@@ -50,12 +49,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
+
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
@@ -116,7 +110,8 @@ export const schema = z.object({
   priority: z.string().optional(),
   room_id: z.string().nullable().optional(), // Null si es personal, con ID si es de sala
   user_id: z.string().optional(), // ID del dueño
-  order_index: z.number().nullable().optional() // Índice para ordenamiento
+  order_index: z.number().nullable().optional(), // Índice para ordenamiento
+  description: z.string().optional() // Descripción ampliada
 })
 
 
@@ -181,6 +176,7 @@ const getColumns = (
   onDeleteTask: (id: number) => void,
   onToggleFavorite: (id: number) => void,
   onEditTask: (task: z.infer<typeof schema>) => void,
+  onDirectUpdateTask: (task: z.infer<typeof schema>) => void,
   onMoveTask?: (id: number) => void // Nueva acción opcional
 ): ColumnDef<z.infer<typeof schema>>[] => [
     {
@@ -219,15 +215,26 @@ const getColumns = (
     {
       accessorKey: "header",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Título" />,
-      cell: ({ row }) => {
+      cell: ({ row, table }) => {
+        const isCompleting = (table.options.meta as any)?.completingIds?.has?.(row.original.id);
+        const isCompleted = row.original.status === 'Completada' || isCompleting;
+        
         return (
           <div className="flex items-center space-x-2">
             {row.original.favorite && <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />}
-            <Badge variant="outline" className={`px-2 py-0.5 whitespace-nowrap font-medium text-[11px] text-foreground capitalize border-border bg-transparent ${row.original.status === 'Completada' ? 'opacity-70' : ''}`}>
+            <Badge variant="outline" className={`px-2 py-0.5 whitespace-nowrap font-medium text-[11px] text-foreground capitalize border-border bg-transparent transition-opacity duration-500 ${isCompleted ? 'opacity-50' : ''}`}>
               {row.original.type}
             </Badge>
-            <span className={`max-w-[500px] truncate font-medium ${row.original.status === 'Completada' ? 'line-through text-muted-foreground opacity-70' : ''}`}>
-              <TableCellViewer item={row.original} />
+            <span 
+              className={`max-w-[500px] truncate font-medium ${isCompleted ? 'text-muted-foreground opacity-70' : ''}`}
+              style={{
+                  backgroundImage: "linear-gradient(transparent calc(50% - 1px), currentColor calc(50% - 1px), currentColor calc(50% + 1px), transparent calc(50% + 1px))",
+                  backgroundSize: isCompleted ? "100% 100%" : "0% 100%",
+                  backgroundRepeat: "no-repeat",
+                  transition: "background-size 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s ease-out, opacity 0.5s ease-out",
+              }}
+            >
+              <TableCellViewer item={row.original} onUpdate={onDirectUpdateTask} />
             </span>
           </div>
         )
@@ -387,14 +394,16 @@ export function DataTable({
   const [rowSelection, setRowSelection] = React.useState({}) // Filas seleccionadas
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({}) // Visibilidad de columnas
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  ) // Filtros aplicados
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([
+    { id: "status", value: ["En Progreso", "Sin Empezar"] } // Por defecto no mostramos las completadas
+  ]) // Filtros aplicados
   const [sorting, setSorting] = React.useState<SortingState>([]) // Ordenamiento de columnas
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
   }) // Configuración de paginación
+
+  const [completingIds, setCompletingIds] = React.useState<Set<number>>(new Set());
 
   // Add Task dialog state
   const [isDialogOpen, setIsDialogOpen] = React.useState(false)
@@ -495,8 +504,16 @@ export function DataTable({
     })
   }
 
+  const handleDirectUpdateTask = (updatedTask: z.infer<typeof schema>) => {
+    const newData = data.map((task) =>
+      task.id === updatedTask.id ? updatedTask : task
+    );
+    setData(newData);
+    onTasksChange?.(newData);
+  };
+
   // Derive columns here to pass the delete function
-  const columns = React.useMemo(() => getColumns(handleDeleteTask, handleToggleFavorite, handleEditTask, onMoveTask), [data, onMoveTask])
+  const columns = React.useMemo(() => getColumns(handleDeleteTask, handleToggleFavorite, handleEditTask, handleDirectUpdateTask, onMoveTask), [data, onMoveTask])
 
 
   // Configuración de la tabla usando React Table
@@ -523,6 +540,9 @@ export function DataTable({
     getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    meta: {
+      completingIds
+    }
   })
 
   const handleDeleteSelected = () => {
@@ -535,12 +555,20 @@ export function DataTable({
 
   const handleCompleteSelected = () => {
     const selectedIds = table.getFilteredSelectedRowModel().rows.map(r => r.original.id)
-    const newData = data.map((task) =>
-      selectedIds.includes(task.id) ? { ...task, status: "Completada" } : task
-    )
-    setData(newData)
-    onTasksChange?.(newData)
-    table.resetRowSelection()
+    
+    // Activa el estado de animación
+    setCompletingIds(prev => new Set([...prev, ...selectedIds]))
+    
+    // Espera a que termine la animación antes de propagar el cambio
+    setTimeout(() => {
+        const newData = data.map((task) =>
+          selectedIds.includes(task.id) ? { ...task, status: "Completada" } : task
+        )
+        setData(newData)
+        onTasksChange?.(newData)
+        table.resetRowSelection()
+        setCompletingIds(new Set())
+    }, 500)
   }
 
 
@@ -919,144 +947,83 @@ export function DataTable({
   )
 }
 
-// Datos de ejemplo para el gráfico
-const chartData = [
-  { month: "Enero", desktop: 186, mobile: 80 },
-  { month: "Febrero", desktop: 305, mobile: 200 },
-  { month: "Marzo", desktop: 237, mobile: 120 },
-  { month: "Abril", desktop: 73, mobile: 190 },
-  { month: "Mayo", desktop: 209, mobile: 130 },
-  { month: "Junio", desktop: 214, mobile: 140 },
-]
-
-// Configuración de colores para el gráfico
-const chartConfig = {
-  desktop: {
-    label: "Escritorio",
-    color: "var(--primary)",
-  },
-  mobile: {
-    label: "Móvil",
-    color: "var(--primary)",
-  },
-} satisfies ChartConfig
-
 /**
  * Componente TableCellViewer - Visor detallado de una tarea
  * Muestra un drawer (cajón lateral) con información detallada de la tarea
  * @param item - Datos de la tarea a mostrar
  */
-function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
+function TableCellViewer({ item, onUpdate }: { item: z.infer<typeof schema>, onUpdate: (updated: z.infer<typeof schema>) => void }) {
   const isMobile = useIsMobile()
+  const [open, setOpen] = React.useState(false)
+  const [formData, setFormData] = React.useState(item)
+
+  // Sincronizar el local state si cambian los props desde fuera
+  React.useEffect(() => {
+    setFormData(item);
+  }, [item]);
+
+  const handleSave = () => {
+    onUpdate(formData)
+    setOpen(false)
+  }
 
   return (
-    <Drawer direction={isMobile ? "bottom" : "right"}>
+    <Drawer open={open} onOpenChange={setOpen} direction={isMobile ? "bottom" : "right"}>
       <DrawerTrigger asChild>
         <Button variant="link" className="text-foreground w-fit px-0 text-left">
           {item.header}
         </Button>
       </DrawerTrigger>
       <DrawerContent>
-        <DrawerHeader className="gap-1">
-          <DrawerTitle>{item.header}</DrawerTitle>
+        <DrawerHeader className="gap-1 border-b pb-4 mb-4">
+          <DrawerTitle className="text-xl">{item.header}</DrawerTitle>
           <DrawerDescription>
-            Mostrando el total de visitantes de los últimos 6 meses
+            Edita las propiedades de tu tarea o agrega una descripción más ampliada.
           </DrawerDescription>
         </DrawerHeader>
-        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
-          {!isMobile && (
-            <>
-              <ChartContainer config={chartConfig}>
-                <AreaChart
-                  accessibilityLayer
-                  data={chartData}
-                  margin={{
-                    left: 0,
-                    right: 10,
-                  }}
-                >
-                  <CartesianGrid vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    tickFormatter={(value) => value.slice(0, 3)}
-                    hide
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={<ChartTooltipContent indicator="dot" />}
-                  />
-                  <Area
-                    dataKey="mobile"
-                    type="natural"
-                    fill="var(--color-mobile)"
-                    fillOpacity={0.6}
-                    stroke="var(--color-mobile)"
-                    stackId="a"
-                  />
-                  <Area
-                    dataKey="desktop"
-                    type="natural"
-                    fill="var(--color-desktop)"
-                    fillOpacity={0.4}
-                    stroke="var(--color-desktop)"
-                    stackId="a"
-                  />
-                </AreaChart>
-              </ChartContainer>
-              <Separator />
-              <div className="grid gap-2">
-                <div className="flex gap-2 leading-none font-medium">
-                  Tendencia al alza del 5.2% este mes{" "}
-                  <IconTrendingUp className="size-4" />
-                </div>
-                <div className="text-muted-foreground">
-                  Mostrando el total de visitantes de los últimos 6 meses. Este es solo
-                  un texto de ejemplo para probar el diseño. Abarca múltiples líneas
-                  y debería ajustarse automáticamente.
-                </div>
-              </div>
-              <Separator />
-            </>
-          )}
-          <form className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5 overflow-y-auto px-4 pb-10 text-sm">
+          <form className="flex flex-col gap-5" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
             <div className="flex flex-col gap-3">
-              <Label htmlFor="header">Título de la Tarea</Label>
-              <Input id="header" defaultValue={item.header} />
+              <Label htmlFor={`header-${item.id}`}>Título de la Tarea</Label>
+              <Input id={`header-${item.id}`} value={formData.header} onChange={(e) => setFormData({...formData, header: e.target.value})} />
             </div>
+
+            <div className="flex flex-col gap-3">
+              <Label htmlFor={`desc-${item.id}`}>Descripción</Label>
+              <textarea 
+                 id={`desc-${item.id}`}
+                 className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y" 
+                 placeholder="Añade más detalles sobre esta tarea..."
+                 value={formData.description || ""}
+                 onChange={(e) => setFormData({...formData, description: e.target.value})}
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="type">Tipo</Label>
-                <Select defaultValue={item.type}>
-                  <SelectTrigger id="type" className="w-full">
+                <Label htmlFor={`type-${item.id}`}>Tipo</Label>
+                <Select value={formData.type} onValueChange={(val) => setFormData({...formData, type: val})}>
+                  <SelectTrigger id={`type-${item.id}`} className="w-full">
                     <SelectValue placeholder="Seleccionar tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Tabla de Contenidos">
-                      Tabla de Contenidos
-                    </SelectItem>
-                    <SelectItem value="Resumen Ejecutivo">
-                      Resumen Ejecutivo
-                    </SelectItem>
-                    <SelectItem value="Enfoque Técnico">
-                      Enfoque Técnico
-                    </SelectItem>
+                    <SelectItem value="Tabla de Contenidos">Tabla de Contenidos</SelectItem>
+                    <SelectItem value="Resumen Ejecutivo">Resumen Ejecutivo</SelectItem>
+                    <SelectItem value="Enfoque Técnico">Enfoque Técnico</SelectItem>
                     <SelectItem value="Diseño">Diseño</SelectItem>
                     <SelectItem value="Capacidades">Capacidades</SelectItem>
-                    <SelectItem value="Documentos de Enfoque">
-                      Documentos de Enfoque
-                    </SelectItem>
+                    <SelectItem value="Documentos de Enfoque">Documentos de Enfoque</SelectItem>
                     <SelectItem value="Narrativa">Narrativa</SelectItem>
                     <SelectItem value="Portada">Portada</SelectItem>
+                    <SelectItem value="Desarrollo">Desarrollo</SelectItem>
+                    <SelectItem value="Anotación">Anotación</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="status">Estado</Label>
-                <Select defaultValue={item.status}>
-                  <SelectTrigger id="status" className="w-full">
+                <Label htmlFor={`status-${item.id}`}>Estado</Label>
+                <Select value={formData.status} onValueChange={(val) => setFormData({...formData, status: val})}>
+                  <SelectTrigger id={`status-${item.id}`} className="w-full">
                     <SelectValue placeholder="Seleccionar estado" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1067,18 +1034,32 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
                 </Select>
               </div>
             </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="limit">Límite</Label>
-                <Input id="limit" defaultValue={item.limit} />
+                <Label htmlFor={`priority-${item.id}`}>Prioridad</Label>
+                <Select value={formData.priority || "Medium"} onValueChange={(val) => setFormData({...formData, priority: val})}>
+                  <SelectTrigger id={`priority-${item.id}`} className="w-full">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="High">Alta</SelectItem>
+                    <SelectItem value="Medium">Media</SelectItem>
+                    <SelectItem value="Low">Baja</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Label htmlFor={`limit-${item.id}`}>Límite</Label>
+                <Input id={`limit-${item.id}`} placeholder="Ej: Mañana a las 10am" value={formData.limit || ""} onChange={(e) => setFormData({...formData, limit: e.target.value})} />
               </div>
             </div>
           </form>
         </div>
-        <DrawerFooter>
-          <Button>Enviar</Button>
+        <DrawerFooter className="border-t pt-4">
+          <Button onClick={handleSave} className="w-full">Guardar</Button>
           <DrawerClose asChild>
-            <Button variant="outline">Cerrar</Button>
+            <Button variant="outline" className="w-full">Cerrar</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
