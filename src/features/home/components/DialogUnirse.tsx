@@ -23,11 +23,12 @@ const DialogUnirse = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const join = async () => {
+    const join = async (currentValue?: string) => {
 
 
         setErrorMsg(null);
-        const code = parsearInvitacion(value);
+        const codeToParse = currentValue !== undefined ? currentValue : value;
+        const code = parsearInvitacion(codeToParse);
         if (!code) {
             setErrorMsg("Pegá un código válido o un link de invitación.");
             return;
@@ -68,16 +69,25 @@ const DialogUnirse = () => {
                         Introduce el código de la sala
                     </DialogDescription>
                 </DialogHeader>
-                <div>
-                    <Input placeholder="Código" value={value} onChange={(e) => setValue(e.target.value)}></Input>
-                </div>
-                {errorMsg && <p className="text-destructive text-sm">{errorMsg}</p>}
-                <DialogFooter className="sm:justify-start">
-                    <DialogClose asChild>
-                        <Button variant="outline">Cancelar</Button>
-                    </DialogClose>
-                    <Button onClick={join}>Unirse</Button>
-                </DialogFooter>
+                <form onSubmit={(e) => { 
+                    e.preventDefault(); 
+                    join(); 
+                }}>
+                    <div>
+                        <Input 
+                            placeholder="Código" 
+                            value={value} 
+                            onChange={(e) => setValue(e.target.value)}
+                        />
+                    </div>
+                    {errorMsg && <p className="text-destructive text-sm mt-2">{errorMsg}</p>}
+                    <DialogFooter className="sm:justify-start mt-6">
+                        <DialogClose asChild>
+                            <Button variant="outline" type="button">Cancelar</Button>
+                        </DialogClose>
+                        <Button type="submit">Unirse</Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     )

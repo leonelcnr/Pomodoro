@@ -47,7 +47,7 @@ const GaplessAudioPlayer = ({ src, targetVolume, isPlaying }: { src: string, tar
     useEffect(() => {
         const CROSSFADE_TIME = 2.0; // 2 segundos de transición entre loops
 
-        const loop = () => {
+        const intervalId = setInterval(() => {
             if (!isPlaying || targetVolume === 0) return;
 
             const a = audioA.current;
@@ -60,7 +60,6 @@ const GaplessAudioPlayer = ({ src, targetVolume, isPlaying }: { src: string, tar
 
             // Asegurar que el actual esté reproduciéndose
             if (current.paused) {
-                current.volume = maxVol;
                 current.play().catch(() => { });
             }
 
@@ -79,8 +78,8 @@ const GaplessAudioPlayer = ({ src, targetVolume, isPlaying }: { src: string, tar
                 current.volume = maxVol * Math.cos((1 - ratio) * 0.5 * Math.PI);
                 next.volume = maxVol * Math.cos(ratio * 0.5 * Math.PI);
 
-                // Si se terminó el tiempo de overlap
-                if (overlap <= 0.05) {
+                // Si se terminó el tiempo de overlap o el navegador limitó el timer y se pasó
+                if (overlap <= 0.25 || current.ended) {
                     current.pause();
                     current.currentTime = 0;
                     activeAudio.current = activeAudio.current === 'A' ? 'B' : 'A';
@@ -89,20 +88,15 @@ const GaplessAudioPlayer = ({ src, targetVolume, isPlaying }: { src: string, tar
             } else {
                 current.volume = maxVol;
             }
+        }, 100);
 
-            requestRef.current = requestAnimationFrame(loop);
-        };
-
-        if (isPlaying && targetVolume > 0) {
-            requestRef.current = requestAnimationFrame(loop);
-        } else {
+        if (!isPlaying || targetVolume === 0) {
             audioA.current?.pause();
             audioB.current?.pause();
-            if (requestRef.current) cancelAnimationFrame(requestRef.current);
         }
 
         return () => {
-            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+            clearInterval(intervalId);
         };
     }, [isPlaying, targetVolume]);
 
