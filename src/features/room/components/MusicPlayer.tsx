@@ -18,7 +18,7 @@ const AMBIENT_SOUNDS = [
     { id: "keyboard", name: "Teclado", icon: Keyboard, file: "/sounds/keyboard.ogg" },
     { id: "birds", name: "Pájaros", icon: Bird, file: "/sounds/birds.ogg" },
     { id: "brown_noise", name: "Ruido Marrón", icon: Activity, file: "/sounds/brown_noise.ogg" },
-    { id: "jazz", name: "Jazz", icon: Music, file: "/sounds/jazz.wav" },
+    { id: "jazz", name: "Jazz", icon: Music, file: "/sounds/jazz.ogg" },
     { id: "underwater", name: "Subacuático", icon: Droplets, file: "/sounds/white-noise-underwater.ogg" },
 ];
 
