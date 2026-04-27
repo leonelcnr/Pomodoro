@@ -1,13 +1,35 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Music, X, Play, Radio } from "lucide-react";
+import { Music, X, Play, Radio, CloudRain, Flame, Waves, CloudLightning, Users, Car, Train, Keyboard, Bird, Activity, Droplets } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import supabase from '@/config/supabase';
+
+const AMBIENT_SOUNDS = [
+    { id: "rain", name: "Lluvia", icon: CloudRain, file: "/sounds/rain.ogg" },
+    { id: "fire", name: "Fogata", icon: Flame, file: "/sounds/fire.ogg" },
+    { id: "ocean", name: "Océano", icon: Waves, file: "/sounds/ocean.ogg" },
+    { id: "thunder", name: "Truenos", icon: CloudLightning, file: "/sounds/thunder.ogg" },
+    { id: "people", name: "Personas", icon: Users, file: "/sounds/people.ogg" },
+    { id: "traffic", name: "Tráfico", icon: Car, file: "/sounds/traffic.ogg" },
+    { id: "train", name: "Tren", icon: Train, file: "/sounds/train.ogg" },
+    { id: "keyboard", name: "Teclado", icon: Keyboard, file: "/sounds/keyboard.ogg" },
+    { id: "birds", name: "Pájaros", icon: Bird, file: "/sounds/birds.ogg" },
+    { id: "brown_noise", name: "Ruido Marrón", icon: Activity, file: "/sounds/brown_noise.ogg" },
+    { id: "jazz", name: "Jazz", icon: Music, file: "/sounds/jazz.wav" },
+    { id: "underwater", name: "Subacuático", icon: Droplets, file: "/sounds/white-noise-underwater.ogg" },
+];
 
 export const MusicPlayer = React.memo(function MusicPlayer({ roomId }: { roomId?: string }) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Ambient State
+    const [ambientVolumes, setAmbientVolumes] = useState<Record<string, number>>({});
+    const [isAmbientOn, setIsAmbientOn] = useState(true);
+    const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
     // Local State
     const [localUrlInput, setLocalUrlInput] = useState("");
@@ -33,6 +55,23 @@ export const MusicPlayer = React.memo(function MusicPlayer({ roomId }: { roomId?
         if (isOpen) document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [isOpen]);
+
+    // Handle Ambient Sounds Playback
+    useEffect(() => {
+        Object.keys(audioRefs.current).forEach(id => {
+            const audio = audioRefs.current[id];
+            if (audio) {
+                const vol = ambientVolumes[id] || 0;
+                audio.volume = vol / 100;
+
+                if (isAmbientOn && vol > 0) {
+                    audio.play().catch(e => console.warn(`Audio ${id} no pudo reproducirse (requiere interacción del usuario o archivo faltante):`, e));
+                } else {
+                    audio.pause();
+                }
+            }
+        });
+    }, [ambientVolumes, isAmbientOn]);
 
     // Subscribing to Supabase for Room Music
     useEffect(() => {
@@ -106,10 +145,20 @@ export const MusicPlayer = React.memo(function MusicPlayer({ roomId }: { roomId?
         }
     };
 
-    const activeMusic = localEmbedUrl || roomState.url;
+    const activeMusic = localEmbedUrl || roomState.url || (isAmbientOn && Object.values(ambientVolumes).some(v => v > 0));
 
     return (
         <div className="relative flex items-center" ref={dropdownRef}>
+            {/* Hidden Audio Elements for Ambient Sounds */}
+            {AMBIENT_SOUNDS.map(sound => (
+                <audio
+                    key={sound.id}
+                    ref={el => { audioRefs.current[sound.id] = el; }}
+                    src={sound.file}
+                    loop
+                />
+            ))}
+
             <Button
                 variant={isOpen || activeMusic ? "default" : "outline"}
                 size="icon"
@@ -120,20 +169,63 @@ export const MusicPlayer = React.memo(function MusicPlayer({ roomId }: { roomId?
                 <Music className="w-5 h-5" />
             </Button>
 
-            {/* Modal flotante fijo para evitar colisiones visuales. En móvil va centrado abajo, en PC va en la esquina inferior derecha. */}
+            {/* Modal flotante */}
             <div
                 className={`fixed z-50 bottom-24 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 w-[340px] sm:w-[400px] bg-popover text-popover-foreground border shadow-2xl rounded-xl p-5 transition-all duration-300 flex flex-col gap-4 ${isOpen ? 'opacity-100 pointer-events-auto translate-y-0 scale-100 visible' : 'opacity-0 pointer-events-none translate-y-4 scale-95 invisible'}`}
             >
                 <div className="flex flex-col gap-1">
-                    <h4 className="font-semibold leading-none tracking-tight">Reproductor de Música</h4>
-                    <p className="text-sm text-muted-foreground leading-tight">Agrega música de fondo para concentrarte.</p>
+                    <h4 className="font-semibold leading-none tracking-tight">Reproductor</h4>
+                    <p className="text-sm text-muted-foreground leading-tight">Configura tu ambiente ideal de concentración.</p>
                 </div>
 
-                <Tabs defaultValue="local" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
-                        <TabsTrigger value="local">Tu Música (Local)</TabsTrigger>
-                        <TabsTrigger value="room" disabled={!roomId}>Música de Sala</TabsTrigger>
+                <Tabs defaultValue="ambient" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 mb-4">
+                        <TabsTrigger value="ambient">Ambiental</TabsTrigger>
+                        <TabsTrigger value="local">Local</TabsTrigger>
+                        <TabsTrigger value="room" disabled={!roomId}>Sala</TabsTrigger>
                     </TabsList>
+
+                    {/* TABS AMBIENTAL */}
+                    <TabsContent value="ambient" className="space-y-5">
+                        <div className="flex items-center justify-between pb-3 border-b border-border/50">
+                            <span className="text-sm font-medium text-foreground">Sonidos Activos</span>
+                            <Switch checked={isAmbientOn} onCheckedChange={setIsAmbientOn} />
+                        </div>
+
+                        <div className="grid gap-5 max-h-[260px] overflow-y-auto pr-3 custom-scrollbar">
+                            {AMBIENT_SOUNDS.map((sound) => {
+                                const Icon = sound.icon;
+                                const volume = ambientVolumes[sound.id] || 0;
+                                const isActive = volume > 0 && isAmbientOn;
+
+                                return (
+                                    <div key={sound.id} className="flex items-center gap-4 group">
+                                        <div className={`p-2 rounded-md transition-colors ${isActive ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground group-hover:bg-muted/80'}`}>
+                                            <Icon className="w-4 h-4" />
+                                        </div>
+                                        <div className="flex-1 flex flex-col gap-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className={`text-xs font-medium transition-colors ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                                    {sound.name}
+                                                </span>
+                                                <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">
+                                                    {volume}%
+                                                </span>
+                                            </div>
+                                            <Slider
+                                                value={[volume]}
+                                                max={100}
+                                                step={1}
+                                                onValueChange={(vals) => setAmbientVolumes(prev => ({ ...prev, [sound.id]: vals[0] }))}
+                                                disabled={!isAmbientOn}
+                                                className={`transition-opacity ${!isAmbientOn ? "opacity-40" : ""}`}
+                                            />
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </TabsContent>
 
                     {/* TABS INDIVIDUAL */}
                     <TabsContent value="local" className="space-y-4">
@@ -219,3 +311,4 @@ export const MusicPlayer = React.memo(function MusicPlayer({ roomId }: { roomId?
         </div>
     );
 });
+
