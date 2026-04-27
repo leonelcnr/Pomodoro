@@ -22,6 +22,94 @@ const AMBIENT_SOUNDS = [
     { id: "underwater", name: "Subacuático", icon: Droplets, file: "/sounds/white-noise-underwater.ogg" },
 ];
 
+const GaplessAudioPlayer = ({ src, targetVolume, isPlaying }: { src: string, targetVolume: number, isPlaying: boolean }) => {
+    const audioA = useRef<HTMLAudioElement | null>(null);
+    const audioB = useRef<HTMLAudioElement | null>(null);
+    const activeAudio = useRef<'A' | 'B'>('A');
+    const requestRef = useRef<number>(null);
+
+    // Configuración inicial de los audios (Ping-Pong buffers)
+    useEffect(() => {
+        audioA.current = new Audio(src);
+        audioB.current = new Audio(src);
+        audioA.current.preload = "auto";
+        audioB.current.preload = "auto";
+
+        return () => {
+            audioA.current?.pause();
+            audioA.current?.removeAttribute('src');
+            audioB.current?.pause();
+            audioB.current?.removeAttribute('src');
+        };
+    }, [src]);
+
+    // Lógica de bucle y Crossfade suave (equal-power)
+    useEffect(() => {
+        const CROSSFADE_TIME = 2.0; // 2 segundos de transición entre loops
+
+        const loop = () => {
+            if (!isPlaying || targetVolume === 0) return;
+
+            const a = audioA.current;
+            const b = audioB.current;
+            if (!a || !b) return;
+
+            const maxVol = targetVolume / 100;
+            const current = activeAudio.current === 'A' ? a : b;
+            const next = activeAudio.current === 'A' ? b : a;
+
+            // Asegurar que el actual esté reproduciéndose
+            if (current.paused) {
+                current.volume = maxVol;
+                current.play().catch(() => { });
+            }
+
+            // Si estamos en la zona de crossfade (cerca del final)
+            if (current.duration && current.currentTime >= current.duration - CROSSFADE_TIME) {
+                if (next.paused) {
+                    next.currentTime = 0;
+                    next.volume = 0;
+                    next.play().catch(() => { });
+                }
+
+                const overlap = current.duration - current.currentTime; // De CROSSFADE_TIME bajando a 0
+                const ratio = Math.max(0, Math.min(1, overlap / CROSSFADE_TIME)); // De 1 bajando a 0
+
+                // Equal-power crossfade usando coseno (evita bajones de volumen)
+                current.volume = maxVol * Math.cos((1 - ratio) * 0.5 * Math.PI);
+                next.volume = maxVol * Math.cos(ratio * 0.5 * Math.PI);
+
+                // Si se terminó el tiempo de overlap
+                if (overlap <= 0.05) {
+                    current.pause();
+                    current.currentTime = 0;
+                    activeAudio.current = activeAudio.current === 'A' ? 'B' : 'A';
+                    next.volume = maxVol;
+                }
+            } else {
+                current.volume = maxVol;
+            }
+
+            requestRef.current = requestAnimationFrame(loop);
+        };
+
+        if (isPlaying && targetVolume > 0) {
+            requestRef.current = requestAnimationFrame(loop);
+        } else {
+            audioA.current?.pause();
+            audioB.current?.pause();
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        }
+
+        return () => {
+            if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        };
+    }, [isPlaying, targetVolume]);
+
+    return null;
+};
+
+
 export const MusicPlayer = React.memo(function MusicPlayer({ roomId }: { roomId?: string }) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -29,7 +117,6 @@ export const MusicPlayer = React.memo(function MusicPlayer({ roomId }: { roomId?
     // Ambient State
     const [ambientVolumes, setAmbientVolumes] = useState<Record<string, number>>({});
     const [isAmbientOn, setIsAmbientOn] = useState(true);
-    const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
     // Local State
     const [localUrlInput, setLocalUrlInput] = useState("");
@@ -55,23 +142,6 @@ export const MusicPlayer = React.memo(function MusicPlayer({ roomId }: { roomId?
         if (isOpen) document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [isOpen]);
-
-    // Handle Ambient Sounds Playback
-    useEffect(() => {
-        Object.keys(audioRefs.current).forEach(id => {
-            const audio = audioRefs.current[id];
-            if (audio) {
-                const vol = ambientVolumes[id] || 0;
-                audio.volume = vol / 100;
-
-                if (isAmbientOn && vol > 0) {
-                    audio.play().catch(e => console.warn(`Audio ${id} no pudo reproducirse (requiere interacción del usuario o archivo faltante):`, e));
-                } else {
-                    audio.pause();
-                }
-            }
-        });
-    }, [ambientVolumes, isAmbientOn]);
 
     // Subscribing to Supabase for Room Music
     useEffect(() => {
@@ -149,15 +219,18 @@ export const MusicPlayer = React.memo(function MusicPlayer({ roomId }: { roomId?
 
     return (
         <div className="relative flex items-center" ref={dropdownRef}>
-            {/* Hidden Audio Elements for Ambient Sounds */}
-            {AMBIENT_SOUNDS.map(sound => (
-                <audio
-                    key={sound.id}
-                    ref={el => { audioRefs.current[sound.id] = el; }}
-                    src={sound.file}
-                    loop
-                />
-            ))}
+            {/* Hidden Audio Elements for Ambient Sounds (Ping-Pong Gapless) */}
+            {AMBIENT_SOUNDS.map(sound => {
+                const vol = ambientVolumes[sound.id] || 0;
+                return (
+                    <GaplessAudioPlayer
+                        key={sound.id}
+                        src={sound.file}
+                        targetVolume={vol}
+                        isPlaying={isAmbientOn}
+                    />
+                );
+            })}
 
             <Button
                 variant={isOpen || activeMusic ? "default" : "outline"}
