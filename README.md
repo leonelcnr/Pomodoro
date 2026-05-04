@@ -58,23 +58,3 @@ Desde el navegador podés abrir una **ventana emergente (popup)** con acceso rá
 | Estado      | Zustand                                 |
 | Deploy      | Vercel                                  |
 
----
-
-## Desarrollo local
-
-```bash
-git clone https://github.com/leonelcnr/Pomodoro.git
-cd Pomodoro
-npm install
-```
-
-Crea `.env.local` con tus claves de Supabase:
-
-```env
-VITE_SUPABASE_URL=tu_url_de_proyecto
-VITE_SUPABASE_ANON_KEY=tu_anon_key
-```
-
-```bash
-npm run dev
-```
