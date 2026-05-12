@@ -17,7 +17,11 @@ import {
 const chartConfig = {
   minutes: {
     label: "Minutos",
-    color: "var(--color-primary)",
+    color: "#8b5cf6",
+  },
+  avgMinutes: {
+    label: "Promedio Minutos",
+    color: "#8b5cf6",
   },
 } satisfies ChartConfig
 
@@ -30,25 +34,33 @@ const formatMinutes = (m: number) => {
 const heatmapDateDisplayFunction = (d: Date) => new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }).format(d);
 
 import { Clock, CheckCircle2, TrendingUp, Timer } from "lucide-react"
-import { useEffect, useState, useRef, useMemo, startTransition } from "react"
+import { useState, useMemo } from "react"
 import { useAuth } from "@/features/auth/context/AuthContext"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useDashboardStats, type TimeRange } from "@/features/dashboard/hooks/useDashboardStats"
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
-  
-  const { 
-    stats, 
-    recentTasks, 
-    chartData, 
-    displayMinutes, 
-    avgSessionMinutes, 
-    displayCompletedTasks, 
-    pieChartData, 
-    heatmapData, 
-    bestDaysData 
-  } = useDashboardStats(user?.id, timeRange);
+
+  const {
+    stats,
+    recentTasks,
+    statsByRange,
+    heatmapData,
+    bestDaysData,
+    isLoading
+  } = useDashboardStats(user?.id);
+
+  const currentStats = statsByRange[timeRange] || {
+    chartData: [],
+    displayMinutes: 0,
+    avgSessionMinutes: 0,
+    displayCompletedTasks: 0,
+    pieChartData: []
+  };
+
+  const { chartData, displayMinutes, avgSessionMinutes, displayCompletedTasks, pieChartData } = currentStats;
 
   // Fechas del Heatmap estáticas
   const heatmapDates = useMemo(() => {
@@ -98,7 +110,7 @@ export default function Dashboard() {
               <h1 className="text-3xl font-bold tracking-tight">Tu Momentum</h1>
               <p className="text-muted-foreground mt-1 text-sm">Resumen de tus bloques de enfoque y tareas completadas.</p>
             </div>
-            <Tabs value={timeRange} onValueChange={(v: any) => startTransition(() => setTimeRange(v))} className="w-full sm:w-auto">
+            <Tabs value={timeRange} onValueChange={(v: any) => setTimeRange(v)} className="w-full sm:w-auto">
               <TabsList className="grid grid-cols-5 w-full sm:w-[400px]">
                 <TabsTrigger value="day">Día</TabsTrigger>
                 <TabsTrigger value="week">Semana</TabsTrigger>
@@ -117,7 +129,11 @@ export default function Dashboard() {
                 <Clock className="h-4 w-4 text-violet-500 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold truncate">{formatMinutes(displayMinutes)}</div>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-24 mb-1" />
+                ) : (
+                  <div className="text-2xl font-bold truncate">{formatMinutes(displayMinutes)}</div>
+                )}
                 <p className="text-xs text-muted-foreground mt-1 truncate">
                   {timeRange === 'total' ? 'Total acumulado' : `En este periodo`}
                 </p>
@@ -130,7 +146,11 @@ export default function Dashboard() {
                 <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold truncate">{displayCompletedTasks}</div>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-16 mb-1" />
+                ) : (
+                  <div className="text-2xl font-bold truncate">{displayCompletedTasks}</div>
+                )}
                 <p className="text-xs text-muted-foreground mt-1 truncate">
                   Tareas Terminadas
                 </p>
@@ -154,7 +174,11 @@ export default function Dashboard() {
                 <Timer className="h-4 w-4 text-blue-500 shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold truncate">{formatMinutes(avgSessionMinutes)}</div>
+                {isLoading ? (
+                  <Skeleton className="h-8 w-24 mb-1" />
+                ) : (
+                  <div className="text-2xl font-bold truncate">{formatMinutes(avgSessionMinutes)}</div>
+                )}
                 <p className="text-xs text-muted-foreground mt-1 truncate">Por sesión ({timeRange === 'total' ? 'histórico' : 'rango actual'})</p>
               </CardContent>
             </Card>
@@ -172,10 +196,13 @@ export default function Dashboard() {
                 </div>
               </CardHeader>
               <CardContent className="px-2 sm:p-6">
-                <ChartContainer
-                  config={chartConfig}
-                  className="aspect-auto h-[250px] w-full"
-                >
+                {isLoading ? (
+                  <Skeleton className="h-[250px] w-full" />
+                ) : (
+                  <ChartContainer
+                    config={chartConfig}
+                    className="aspect-auto h-[250px] w-full"
+                  >
                   <BarChart
                     accessibilityLayer
                     data={chartData}
@@ -203,6 +230,7 @@ export default function Dashboard() {
                     <Bar dataKey="minutes" fill="var(--color-minutes)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ChartContainer>
+                )}
               </CardContent>
             </Card>
 
@@ -213,7 +241,9 @@ export default function Dashboard() {
                 <CardDescription className="text-xs">Distribución de tipos</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center">
-                {pieDataWithFill.length > 0 ? (
+                {isLoading ? (
+                  <Skeleton className="h-[250px] w-[250px] rounded-full mx-auto" />
+                ) : pieDataWithFill.length > 0 ? (
                   <ChartContainer
                     config={pieChartConfig}
                     className="mx-auto aspect-square max-h-[250px] w-full pb-0"
@@ -258,24 +288,24 @@ export default function Dashboard() {
               <CardContent>
                 <div className="space-y-4">
                   {recentTasks.map(task => (
-                    <div key={task.id} className="flex items-center gap-3">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500/80 shrink-0" />
-                      <div className="flex flex-col overflow-hidden">
-                        <span className="text-sm font-medium line-through text-muted-foreground truncate">{task.header}</span>
-                        <div className="flex items-center mt-0.5">
-                           <span className="sr-only">Tipo de tarea: </span>
-                           <span className="text-[10px] text-secondary-foreground bg-secondary px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold">{task.type}</span>
-                        </div>
+                  <div key={task.id} className="flex items-center gap-3">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500/80 shrink-0" />
+                    <div className="flex flex-col overflow-hidden">
+                      <span className="text-sm font-medium line-through text-muted-foreground truncate">{task.header}</span>
+                      <div className="flex items-center mt-0.5">
+                        <span className="sr-only">Tipo de tarea: </span>
+                        <span className="text-[10px] text-secondary-foreground bg-secondary px-1.5 py-0.5 rounded-sm uppercase tracking-wider font-bold">{task.type}</span>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                ))}
 
-                  {recentTasks.length === 0 && (
-                    <div className="text-sm text-center text-muted-foreground py-6 flex flex-col items-center opacity-50">
-                      <CheckCircle2 className="w-8 h-8 mb-2 opacity-50" />
-                      Aún no hay tareas completadas.
-                    </div>
-                  )}
+                {recentTasks.length === 0 && (
+                  <div className="text-sm text-center text-muted-foreground py-6 flex flex-col items-center opacity-50">
+                    <CheckCircle2 className="w-8 h-8 mb-2 opacity-50" />
+                    Aún no hay tareas completadas.
+                  </div>
+                )}
                 </div>
               </CardContent>
             </Card>
@@ -314,7 +344,7 @@ export default function Dashboard() {
                         />
                       }
                     />
-                    <Bar dataKey="avgMinutes" fill="#f97316" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="avgMinutes" fill="var(--color-minutes)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ChartContainer>
               </CardContent>
@@ -333,9 +363,14 @@ export default function Dashboard() {
                   data={heatmapData}
                   startDate={heatmapDates.start}
                   endDate={heatmapDates.end}
-                  colorMode="interpolate"
-                  minColor="#e2e8f0"
-                  maxColor="#8b5cf6"
+                  colorMode="discrete"
+                  colorScale={[
+                    "var(--heatmap-0)",
+                    "var(--heatmap-1)",
+                    "var(--heatmap-2)",
+                    "var(--heatmap-3)",
+                    "var(--heatmap-4)"
+                  ]}
                   cellSize={14}
                   gap={4}
                   valueDisplayFunction={formatMinutes}

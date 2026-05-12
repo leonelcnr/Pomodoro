@@ -5,12 +5,17 @@ import App from './App.tsx'
 import { router } from './Routes'
 import { RouterProvider } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App>
-      <RouterProvider router={router} />
-      <Analytics />
-    </App>
+    <QueryClientProvider client={queryClient}>
+      <App>
+        <RouterProvider router={router} />
+        <Analytics />
+      </App>
+    </QueryClientProvider>
   </StrictMode>,
 )

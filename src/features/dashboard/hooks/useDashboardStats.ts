@@ -1,221 +1,220 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import supabase from '@/lib/supabase';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export type TimeRange = 'day' | 'week' | 'month' | 'year' | 'total';
 
-export function useDashboardStats(userId: string | undefined, timeRange: TimeRange) {
-  const [stats, setStats] = useState({ totalMinutes: 0, completedTasks: 0, currentStreak: 0 });
-  const [allSessionsData, setAllSessionsData] = useState<any[]>([]); 
-  const [completedTasksData, setCompletedTasksData] = useState<any[]>([]);
-  const [recentTasks, setRecentTasks] = useState<any[]>([]);
+export interface RangeStats {
+  chartData: { name: string; minutes: number }[];
+  displayMinutes: number;
+  avgSessionMinutes: number;
+  displayCompletedTasks: number;
+  pieChartData: { name: string; value: number }[];
+}
 
-  useEffect(() => {
-    if (!userId) return;
+export function useDashboardStats(userId: string | undefined) {
+  const queryClient = useQueryClient();
 
-    const loadGeneralStats = async () => {
-      const { data: userStats } = await supabase
-        .from('user_stats')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+  const { data: userStatsData } = useQuery({
+    queryKey: ['userStats', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase.from('user_stats').select('*').eq('user_id', userId).single();
+      return data;
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  });
 
-      const { data: allCompletedTasks } = await supabase
-        .from('tasks')
-        .select('id, type, created_at')
-        .eq('user_id', userId)
-        .eq('status', 'Completada');
+  const { data: aggregates, isLoading: isLoadingAggregates } = useQuery({
+    queryKey: ['dashboardAggregates', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data, error } = await supabase.rpc('get_dashboard_aggregates', { p_user_id: userId });
+      if (error) throw error;
+      return data as any;
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  });
 
-      if (allCompletedTasks) setCompletedTasksData(allCompletedTasks);
-
-      setStats({
-        totalMinutes: userStats?.total_study_minutes || 0,
-        currentStreak: userStats?.current_streak || 0,
-        completedTasks: allCompletedTasks?.length || 0
-      });
-
-      const { data: recent, error: recentError } = await supabase
+  const { data: recentTasks, isLoading: isLoadingTasks } = useQuery({
+    queryKey: ['recentTasks', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data } = await supabase
         .from('tasks')
         .select('id, header, type')
         .eq('user_id', userId)
         .eq('status', 'Completada')
         .order('id', { ascending: false })
         .limit(5);
+      return data || [];
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  });
 
-      if (recentError) console.error("Error fetching recent tasks:", recentError);
-      if (recent) setRecentTasks(recent);
-    };
-
-    loadGeneralStats();
-
-    const channelGeneralStats = supabase.channel('dashboard_general_stats')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_stats', filter: `user_id=eq.${userId}` }, loadGeneralStats)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` }, loadGeneralStats)
-      .subscribe();
-
-    return () => { supabase.removeChannel(channelGeneralStats); }
-  }, [userId]);
-
+  // Suscripciones Realtime
   useEffect(() => {
     if (!userId) return;
-    let isMounted = true;
-
-    const loadAllSessions = async () => {
-      const { data: rawSessions, error: rawError } = await supabase
-        .from('study_sessions')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (rawError) console.error("Error fetching sessions:", rawError);
-      if (rawSessions && isMounted) setAllSessionsData(rawSessions);
-    };
-
-    loadAllSessions();
-
-    const channelSessions = supabase.channel(`dashboard_sessions_all`)
+    const channel = supabase.channel('dashboard_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_stats', filter: `user_id=eq.${userId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['userStats', userId] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['dashboardAggregates', userId] });
+        queryClient.invalidateQueries({ queryKey: ['recentTasks', userId] });
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'study_sessions', filter: `user_id=eq.${userId}` }, () => {
-        loadAllSessions();
+        queryClient.invalidateQueries({ queryKey: ['dashboardAggregates', userId] });
       })
       .subscribe();
 
-    return () => { 
-      isMounted = false;
-      supabase.removeChannel(channelSessions); 
-    }
-  }, [userId]);
+    return () => { supabase.removeChannel(channel); }
+  }, [userId, queryClient]);
 
-  const { chartData, displayMinutes, avgSessionMinutes, displayCompletedTasks, pieChartData } = useMemo(() => {
-    let currentStartDate = new Date();
-    let labels: string[] = [];
-    const monthsStr = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  // Compute charts for all ranges at once
+  const statsByRange = useMemo(() => {
+    const ranges: TimeRange[] = ['day', 'week', 'month', 'year', 'total'];
+    const result = {} as Record<TimeRange, RangeStats>;
 
-    if (timeRange === 'week') {
-      currentStartDate.setDate(currentStartDate.getDate() - 6);
-      currentStartDate.setHours(0, 0, 0, 0);
-      const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        labels.push(days[d.getDay()]);
-      }
-    } else if (timeRange === 'month') {
-      currentStartDate.setDate(currentStartDate.getDate() - 29);
-      currentStartDate.setHours(0, 0, 0, 0);
-      for (let i = 29; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        labels.push(`${d.getDate()}/${d.getMonth() + 1}`);
-      }
-    } else if (timeRange === 'year') {
-      currentStartDate.setMonth(currentStartDate.getMonth() - 11);
-      currentStartDate.setDate(1);
-      currentStartDate.setHours(0, 0, 0, 0);
-      for (let i = 11; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
-        labels.push(monthsStr[d.getMonth()]);
-      }
-    } else if (timeRange === 'day') {
-      currentStartDate.setHours(0, 0, 0, 0);
-      for (let i = 0; i < 24; i++) {
-        labels.push(`${i.toString().padStart(2, '0')}:00`);
-      }
-    } else if (timeRange === 'total') {
-      currentStartDate.setDate(currentStartDate.getDate() - 89);
-      currentStartDate.setHours(0, 0, 0, 0);
-      for (let i = 89; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        labels.push(`${d.getDate()} ${monthsStr[d.getMonth()]}`);
-      }
-    }
-
-    const aggregatedData = new Map<string, number>();
-    labels.forEach(l => aggregatedData.set(l, 0));
+    const defaultRange: RangeStats = { chartData: [], displayMinutes: 0, avgSessionMinutes: 0, displayCompletedTasks: 0, pieChartData: [] };
     
-    let totalMins = 0;
-    let totalSessions = 0;
-
-    allSessionsData.forEach(session => {
-      let dateStr = session.created_at;
-      if (dateStr && !dateStr.includes('Z') && !dateStr.includes('+') && !dateStr.includes('-')) dateStr += 'Z';
-      const start = new Date(dateStr);
-      
-      if (start >= currentStartDate || timeRange === 'total') {
-         if (start >= currentStartDate) {
-           let label = '';
-           if (timeRange === 'day') {
-              label = `${start.getHours().toString().padStart(2, '0')}:00`;
-           } else if (timeRange === 'week') {
-              const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-              label = days[start.getDay()];
-           } else if (timeRange === 'month') {
-              label = `${start.getDate()}/${start.getMonth() + 1}`;
-           } else if (timeRange === 'year') {
-              label = monthsStr[start.getMonth()];
-           } else if (timeRange === 'total') {
-              label = `${start.getDate()} ${monthsStr[start.getMonth()]}`;
-           }
-
-           if (aggregatedData.has(label)) {
-             aggregatedData.set(label, (aggregatedData.get(label) || 0) + session.duration_minutes);
-           }
-         }
-         
-         totalMins += Number(session.duration_minutes) || 0;
-         totalSessions += 1;
-      }
-    });
-
-    const finalChartData = Array.from(aggregatedData, ([name, minutes]) => ({ name, minutes }));
-
-    const tasksStartDate = timeRange === 'total' ? new Date(0) : currentStartDate;
-    const filteredTasks = completedTasksData.filter(t => {
-      let dateStr = t.created_at;
-      if (dateStr && !dateStr.includes('Z') && !dateStr.includes('+') && !dateStr.includes('-')) dateStr += 'Z';
-      return new Date(dateStr) >= tasksStartDate;
-    });
-
-    const typeCount: Record<string, number> = {};
-    filteredTasks.forEach(t => {
-      const typeStr = t.type ? t.type.trim() : 'Otro';
-      const type = typeStr.charAt(0).toUpperCase() + typeStr.slice(1);
-      typeCount[type] = (typeCount[type] || 0) + 1;
-    });
-
-    const pieData = Object.entries(typeCount)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
-
-    if (timeRange === 'total') {
-      totalMins = stats.totalMinutes;
-      totalSessions = allSessionsData.length;
+    if (!aggregates) {
+      ranges.forEach(r => { result[r] = { ...defaultRange }; });
+      return result;
     }
 
-    return {
-      chartData: finalChartData,
-      displayMinutes: totalMins,
-      avgSessionMinutes: totalSessions > 0 ? totalMins / totalSessions : 0,
-      displayCompletedTasks: filteredTasks.length,
-      pieChartData: pieData
-    };
-  }, [timeRange, stats.totalMinutes, completedTasksData, allSessionsData]);
+    const argTodayStr = new Date().toLocaleString("sv-SE", { timeZone: "America/Argentina/Buenos_Aires" }).substring(0, 10);
+    const todayObj = new Date(argTodayStr + 'T00:00:00');
+    const monthsStr = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const daysStr = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+    ranges.forEach(range => {
+      let labels: string[] = [];
+      let startDate = new Date(todayObj);
+
+      if (range === 'week') {
+        startDate.setDate(startDate.getDate() - 6);
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(todayObj);
+          d.setDate(d.getDate() - i);
+          labels.push(daysStr[d.getDay()]);
+        }
+      } else if (range === 'month') {
+        startDate.setDate(startDate.getDate() - 29);
+        for (let i = 29; i >= 0; i--) {
+          const d = new Date(todayObj);
+          d.setDate(d.getDate() - i);
+          labels.push(`${d.getDate()}/${d.getMonth() + 1}`);
+        }
+      } else if (range === 'year') {
+        startDate.setMonth(startDate.getMonth() - 11);
+        startDate.setDate(1);
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(todayObj);
+          d.setMonth(d.getMonth() - i);
+          labels.push(monthsStr[d.getMonth()]);
+        }
+      } else if (range === 'day') {
+        for (let i = 0; i < 24; i++) {
+          labels.push(`${i.toString().padStart(2, '0')}:00`);
+        }
+      } else if (range === 'total') {
+        startDate.setDate(startDate.getDate() - 89);
+        for (let i = 89; i >= 0; i--) {
+          const d = new Date(todayObj);
+          d.setDate(d.getDate() - i);
+          labels.push(`${d.getDate()} ${monthsStr[d.getMonth()]}`);
+        }
+      }
+
+      const aggregatedMap = new Map<string, number>();
+      labels.forEach(l => aggregatedMap.set(l, 0));
+      
+      let totalMins = 0;
+      let totalSessions = 0;
+
+      if (range === 'day') {
+        aggregates.hourly.forEach((row: any) => {
+          if (row.stat_date === argTodayStr) {
+            const label = `${row.stat_hour.toString().padStart(2, '0')}:00`;
+            if (aggregatedMap.has(label)) {
+              aggregatedMap.set(label, (aggregatedMap.get(label) || 0) + row.total_minutes);
+            }
+            totalMins += row.total_minutes;
+          }
+        });
+        totalSessions = aggregates.daily.find((d: any) => d.stat_date === argTodayStr)?.sessions_count || 0;
+      } else {
+        aggregates.daily.forEach((row: any) => {
+          const rowDate = new Date(row.stat_date + 'T00:00:00');
+          if (rowDate >= startDate || range === 'total') {
+            if (rowDate >= startDate) {
+               let label = '';
+               if (range === 'week') label = daysStr[row.day_of_week === 7 ? 0 : row.day_of_week]; 
+               else if (range === 'month') label = `${rowDate.getDate()}/${rowDate.getMonth() + 1}`;
+               else if (range === 'year') label = monthsStr[rowDate.getMonth()];
+               else if (range === 'total') label = `${rowDate.getDate()} ${monthsStr[rowDate.getMonth()]}`;
+
+               if (aggregatedMap.has(label)) {
+                 aggregatedMap.set(label, (aggregatedMap.get(label) || 0) + row.total_minutes);
+               }
+            }
+            totalMins += row.total_minutes;
+            totalSessions += row.sessions_count;
+          }
+        });
+      }
+
+      const finalChartData = Array.from(aggregatedMap, ([name, minutes]) => ({ name, minutes }));
+
+      const typeCount: Record<string, number> = {};
+      let displayTasksCount = 0;
+      aggregates.tasks.forEach((t: any) => {
+        const taskDate = new Date(t.stat_date + 'T00:00:00');
+        if (taskDate >= startDate || range === 'total') {
+           const typeStr = t.task_type ? t.task_type.trim() : 'Otro';
+           const type = typeStr.charAt(0).toUpperCase() + typeStr.slice(1);
+           typeCount[type] = (typeCount[type] || 0) + t.tasks_count;
+           displayTasksCount += t.tasks_count;
+        }
+      });
+
+      const pieData = Object.entries(typeCount)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value);
+
+      if (range === 'total' && userStatsData) {
+        totalMins = userStatsData.total_study_minutes || 0;
+        totalSessions = aggregates.daily.reduce((acc: number, val: any) => acc + val.sessions_count, 0);
+      }
+
+      result[range] = {
+        chartData: finalChartData,
+        displayMinutes: totalMins,
+        avgSessionMinutes: totalSessions > 0 ? totalMins / totalSessions : 0,
+        displayCompletedTasks: displayTasksCount,
+        pieChartData: pieData
+      };
+    });
+
+    return result;
+  }, [aggregates, userStatsData]);
 
   const { heatmapData, bestDaysData } = useMemo(() => {
+    if (!aggregates) return { heatmapData: [], bestDaysData: [] };
+
     const dailyMins = new Map<string, number>();
     const weekDaysStats = Array.from({ length: 7 }, () => ({ totalMins: 0, uniqueDays: new Set<string>() }));
 
-    allSessionsData.forEach(row => {
-      if (!row.created_at) return;
-      let dateStr = row.created_at;
-      if (!dateStr.includes('Z') && !dateStr.includes('+') && !dateStr.includes('-')) dateStr += 'Z';
-      const d = new Date(dateStr);
+    aggregates.daily.forEach((row: any) => {
+      dailyMins.set(row.stat_date, row.total_minutes);
       
-      const dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      dailyMins.set(dayKey, (dailyMins.get(dayKey) || 0) + (Number(row.duration_minutes) || 0));
-
-      const dayOfWeek = d.getDay();
-      weekDaysStats[dayOfWeek].totalMins += (Number(row.duration_minutes) || 0);
-      weekDaysStats[dayOfWeek].uniqueDays.add(dayKey);
+      const jsDayOfWeek = row.day_of_week === 7 ? 0 : row.day_of_week;
+      weekDaysStats[jsDayOfWeek].totalMins += row.total_minutes;
+      weekDaysStats[jsDayOfWeek].uniqueDays.add(row.stat_date);
     });
     
     const calculatedHeatmapData = Array.from(dailyMins.entries()).map(([date, value]) => ({ date, value }));
@@ -231,17 +230,19 @@ export function useDashboardStats(userId: string | undefined, timeRange: TimeRan
     });
 
     return { heatmapData: calculatedHeatmapData, bestDaysData: calculatedBestDaysData };
-  }, [allSessionsData]);
+  }, [aggregates]);
 
   return {
-    stats,
-    recentTasks,
-    chartData,
-    displayMinutes,
-    avgSessionMinutes,
-    displayCompletedTasks,
-    pieChartData,
+    stats: {
+      totalMinutes: userStatsData?.total_study_minutes || 0,
+      currentStreak: userStatsData?.current_streak || 0,
+      completedTasks: 0
+    },
+    recentTasks: recentTasks || [],
+    statsByRange,
     heatmapData,
-    bestDaysData
+    bestDaysData,
+    isLoading: isLoadingAggregates || isLoadingTasks
   };
 }
+

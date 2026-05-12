@@ -75,7 +75,11 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
-  --heatmap-zero: rgb(221, 221, 221);
+  --heatmap-0: #ebedf0;
+  --heatmap-1: #ede9fe;
+  --heatmap-2: #c4b5fd;
+  --heatmap-3: #8b5cf6;
+  --heatmap-4: #5b21b6;
 }
 
 @theme inline {
@@ -152,7 +156,11 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
-  --heatmap-zero: rgb(51, 51, 51);
+  --heatmap-0: #161b22;
+  --heatmap-1: #2e1065;
+  --heatmap-2: #5b21b6;
+  --heatmap-3: #8b5cf6;
+  --heatmap-4: #c4b5fd;
 }
 
 @layer base {
