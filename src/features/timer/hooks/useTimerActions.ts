@@ -16,12 +16,12 @@ tickAudio.volume = 0.4;
 
 export const useTimer = () => {
   const { user } = useAuth();
-  // Traemos las funciones y estados de Zustand
-  const { timeLeft, isActive, mode, settings, setTimeLeft, setIsActive, setMode } = useTimerStore();
-  
-  // useRef se usa para guardar valores que NO provocan re-renderizados visuales
-  // Guardamos la hora exacta en que debería terminar el timer
-  const endTimeRef = useRef<number | null>(null);
+  // Traemos las funciones y estados persistentes de Zustand
+  const { 
+    timeLeft, isActive, mode, settings, 
+    targetEndTime, stopwatchStartTime,
+    setTimeLeft, setIsActive, setMode, setTargetEndTime, setStopwatchStartTime
+  } = useTimerStore();
 
   useEffect(() => {
     let interval: number | any;
@@ -29,14 +29,15 @@ export const useTimer = () => {
     if (isActive) {
       if (mode === 'stopwatch') {
         // Lógica del Cronómetro (cuenta progresiva)
-        if (!endTimeRef.current) {
-          // Usamos endTimeRef como startTimeRef para el cronómetro
-          endTimeRef.current = Date.now() - timeLeft * 1000;
+        if (!stopwatchStartTime) {
+          // Si no hay startTime guardado, lo inicializamos para recuperar la sesión
+          setStopwatchStartTime(Date.now() - timeLeft * 1000);
+          return; // Esperamos al siguiente render con el stopwatchStartTime establecido
         }
 
         interval = setInterval(() => {
           const now = Date.now();
-          const difference = now - endTimeRef.current!;
+          const difference = now - stopwatchStartTime;
           const secondsElapsed = Math.floor(difference / 1000);
 
           if (secondsElapsed !== timeLeft) {
@@ -46,17 +47,17 @@ export const useTimer = () => {
 
       } else if (timeLeft > 0) {
         // Lógica del Temporizador (cuenta regresiva)
-        // 1. Si acabamos de arrancar (o reanudar), calculamos cuándo debe terminar.
-        // La fórmula es: Ahora + Segundos que faltan * 1000 (ms)
-      if (!endTimeRef.current) {
-        endTimeRef.current = Date.now() + timeLeft * 1000;
+        // 1. Si acabamos de arrancar (o reanudar), usamos el targetEndTime guardado o lo creamos
+      if (!targetEndTime) {
+        setTargetEndTime(Date.now() + timeLeft * 1000);
+        return; // Esperamos al siguiente render con el targetEndTime
       }
 
       // 2. Iniciamos el intervalo
       interval = setInterval(() => {
         const now = Date.now();
-        // Calculamos cuánto falta restando la meta (endTime) menos el ahora
-        const difference = endTimeRef.current! - now;
+        // Calculamos cuánto falta restando la meta (targetEndTime) menos el ahora
+        const difference = targetEndTime - now;
         
         // Convertimos milisegundos a segundos
         const secondsLeft = Math.ceil(difference / 1000);
@@ -65,7 +66,7 @@ export const useTimer = () => {
           // TERMINÓ EL TIMER
           setTimeLeft(0);
           setIsActive(false);
-          endTimeRef.current = null; // Limpiamos la referencia
+          setTargetEndTime(null); // Limpiamos la referencia guardada
           
           // AQUÍ DISPARAMOS UN SONIDO
           alarmAudio.currentTime = 0;
@@ -129,24 +130,31 @@ export const useTimer = () => {
     } else {
       // Si pausamos o la condición de timeLeft no se cumple, limpiamos el intervalo
       if (interval) clearInterval(interval);
-      endTimeRef.current = null;
+      // No seteamos a null aquí para no causar render extra en useEffect, se maneja en los botones
     }
 
     // Cleanup: Si el componente se desmonta, limpiamos el intervalo
     return () => clearInterval(interval);
-  }, [isActive, setTimeLeft, setIsActive, timeLeft, mode, settings.pomodoro, user, setMode, settings.autoBreak]); // Dependencias
+  }, [isActive, setTimeLeft, setIsActive, timeLeft, mode, settings.pomodoro, user, setMode, settings.autoBreak, targetEndTime, stopwatchStartTime, setTargetEndTime, setStopwatchStartTime]); // Dependencias
 
   // Funciones para que usen los botones
-  const toggleTimer = () => setIsActive(!isActive);
+  const toggleTimer = () => {
+    if (isActive) {
+      // Si estamos pausando, limpiamos las horas de finalización objetivo
+      setTargetEndTime(null);
+      setStopwatchStartTime(null);
+    }
+    setIsActive(!isActive);
+  };
   
   const handleReset = () => {
     if (mode === 'stopwatch') {
       setTimeLeft(0);
       setIsActive(false);
-      endTimeRef.current = null;
+      setStopwatchStartTime(null);
     } else {
       setMode('pomodoro');
-      endTimeRef.current = null;
+      setTargetEndTime(null);
     }
   };
 
